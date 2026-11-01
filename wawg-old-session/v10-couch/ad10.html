@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="he"><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000;font-family:Rubik,Heebo,sans-serif}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden}
+.layer{position:absolute;inset:0;display:none;overflow:hidden}
+.pink{color:#ff3fd0}
+/* problem world */
+#A{background:#ece7de;color:#16121c}
+.cap{position:absolute;left:60px;right:60px;top:150px;text-align:center;direction:rtl;font-weight:900;font-size:118px;line-height:1.02;letter-spacing:-1px}
+.fphone{position:absolute;left:330px;top:620px;width:420px;height:860px;border-radius:64px;background:#16121c;padding:18px}
+.fphone .scr{width:100%;height:100%;border-radius:48px;background:#2b2433;position:relative;overflow:hidden}
+.badge{position:absolute;right:-26px;top:-26px;min-width:120px;height:120px;border-radius:60px;background:#ff3b5c;color:#fff;font-weight:900;font-size:58px;display:grid;place-items:center;padding:0 22px;border:8px solid #ece7de}
+.card{position:absolute;width:520px;padding:20px 24px;border-radius:28px;background:#fff;color:#16121c;direction:rtl;box-shadow:0 14px 34px rgba(30,20,40,.18);display:flex;gap:18px;align-items:center}
+.card .av{flex:none;width:76px;height:76px;border-radius:50%;display:grid;place-items:center;font-size:38px}
+.card b{display:block;font-size:30px;font-weight:800}
+.card span{display:block;font-size:27px;color:#5b5563;margin-top:2px}
+.bub{position:absolute;padding:20px 32px;border-radius:40px 40px 40px 10px;background:#16121c;color:#fff;font-size:40px;font-weight:700;direction:rtl;white-space:nowrap}
+.story{position:absolute;width:170px;height:170px;border-radius:50%;padding:10px}
+.story .in{width:100%;height:100%;border-radius:50%;border:6px solid #ece7de;background-size:cover;background-position:center}
+.story .t{position:absolute;left:0;right:0;bottom:-46px;text-align:center;font-size:28px;font-weight:700;color:#5b5563;direction:ltr}
+.stamp{position:absolute;left:0;right:0;top:1180px;text-align:center}
+.stamp span{display:inline-block;border:12px solid #ff3b5c;color:#ff3b5c;font-weight:900;font-size:130px;padding:6px 38px;border-radius:22px}
+/* sofa */
+.sofa{position:absolute;left:150px;top:1040px;width:780px;height:420px}
+.sofa div{position:absolute;background:#8d84a0;border-radius:40px}
+.zz{position:absolute;font-weight:900;color:#8d84a0;direction:ltr}
+/* question */
+#Q{background:#000;color:#fff}
+/* solution world */
+#B{background:radial-gradient(120% 80% at 50% 40%,#2a1158 0%,#160830 55%,#0b0418 100%);color:#fff}
+#B .ph{position:absolute;inset:-60px;background-size:cover;background-position:center;filter:blur(38px) saturate(1.3);opacity:.32}
+.dot{position:absolute;border-radius:50%;filter:blur(2px)}
+.phone{position:absolute;left:225px;top:420px;width:630px;height:1330px;border-radius:92px;background:#06020e;padding:15px;box-shadow:0 0 0 3px #3a2a5a,0 40px 120px rgba(0,0,0,.6),0 0 160px rgba(162,75,255,.35)}
+.phone .scr{position:relative;width:600px;height:1300px;border-radius:78px;overflow:hidden;background:#0b0418}
+.phone img{position:absolute;left:0;top:0;width:600px;height:1300px;object-fit:cover;object-position:top}
+.tap{position:absolute;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;background:rgba(255,255,255,.35);border:5px solid rgba(255,255,255,.9);opacity:0;z-index:5}
+.bcap{position:absolute;left:40px;right:40px;top:120px;text-align:center;direction:rtl;font-weight:900;font-size:104px;line-height:1.04;text-shadow:0 8px 40px rgba(80,0,120,.6)}
+.chip{position:absolute;padding:20px 38px;border-radius:50px;font-weight:800;font-size:44px;direction:rtl;color:#fff;box-shadow:0 14px 40px rgba(0,0,0,.4)}
+.wm{position:absolute;left:44px;top:44px;width:150px;opacity:.9}
+#icon{position:absolute;left:390px;top:810px;width:300px;height:300px;border-radius:70px;overflow:hidden;box-shadow:0 0 140px rgba(255,63,208,.7);z-index:30}
+.ring{position:absolute;left:540px;top:960px;border-radius:50%;border:10px solid #ff3fd0;z-index:29}
+/* end */
+#E{background:radial-gradient(110% 70% at 50% 42%,#3a1470 0%,#170733 55%,#0b0418 100%);color:#fff}
+.spark{position:absolute;left:540px;top:760px;width:12px;height:12px;border-radius:50%}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:90;pointer-events:none}
+</style></head>
+<body><div id="stage"><div id="flash"></div></div>
+<script>
+"use strict";
+const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),P=(t,a,b)=>cl((t-a)/(b-a)),eo=x=>1-Math.pow(1-x,3),eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,lerp=(a,b,x)=>a+(b-a)*x;
+const back=x=>{const c1=1.9,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+const $=h=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild};
+function rng(s){return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+const stage=document.getElementById('stage'),flash=document.getElementById('flash');
+const add=(h,parent=stage)=>{const e=$(h);parent===stage?stage.insertBefore(e,flash):parent.appendChild(e);return e};
+const BEAT=0.4651,DROP=15.0;
+const SFX=[];const sfx=(t,name,g=1)=>SFX.push({t:+t.toFixed(3),name,g});
+const popIn=(el,t,t0,d=.22,base='')=>{const k=P(t,t0,t0+d);el.style.opacity=k>0?1:0;el.style.transform=`${base} scale(${k>0?back(k):0})`;return k};
+
+/* ================= A: problem (0-13) ================= */
+const A=add(`<div class="layer" id="A"></div>`);
+const capA=add(`<div class="cap"></div>`,A);
+const fph=add(`<div class="fphone"><div class="scr"><div style="position:absolute;left:0;right:0;top:120px;text-align:center;color:#fff;font-weight:300;font-size:120px;direction:ltr" class="clk">22:00</div><div style="position:absolute;left:0;right:0;top:270px;text-align:center;color:#c9c0d6;font-size:38px;direction:rtl">יום חמישי</div></div><div class="badge">0</div></div>`,A);
+const badge=fph.querySelector('.badge');
+const RN=rng(11);
+const GROUPS=[['מסיבות ת״א 🔥','לינק בביו!! 🎉','#ffd23f'],['טכנו IL','מישהו יודע מה יש הערב?','#7cf0b5'],['יוצאים הערב?','אולי פלורנטין?','#7aa7ff'],['סטודנטים ת״א','מסיבה ענקית!! פרטים בפרטי','#ff9f6b'],['חיי לילה 🌙','מי בא?','#c8a2ff'],['האוס לאב','הלינק בתגובות 👇','#ffd23f'],['החבר׳ה 🍻','נו מה עושים???','#7cf0b5'],['רייבים בדרום','מיקום ישלח בבוקר','#ff9f6b'],['מסיבות גגות','נשאר רק ברשימה','#7aa7ff'],['ערבי ג׳אז','הערב? או מחר?','#c8a2ff']];
+const SLOTS=[[40,430],[520,560],[30,770],[540,960],[20,1170],[520,1380],[60,1560],[500,1680],[30,1790],[540,1180]];
+const cards=GROUPS.map((g,i)=>{const e=add(`<div class="card"><div class="av" style="background:${g[2]}">${['🎉','🎧','🌃','🎓','🌙','🏠','🍻','🏜️','🏙️','🎷'][i]}</div><div><b>${g[0]}</b><span>${g[1]}</span></div></div>`,A);
+  const [x,y]=SLOTS[i];e.style.left=x+'px';e.style.top=y+'px';const t0=3.55+i*BEAT/2;sfx(t0,'pop',.55);return {e,t0,rot:(RN()-.5)*10}});
+const PH=['20_90b791a3','24_dc3215b4','27_3b0270fa','33_4165e4d5','34_ee642c36','03_e587df33'];
+const SSL=[[90,560],[820,600],[60,1000],[830,1050],[110,1430],[800,1460]];
+const stories=PH.map((p,i)=>{const e=add(`<div class="story"><div class="in" style="background-image:url(photos/${p}.webp)"></div><div class="t">${['23:58','23:41','23:59','23:12','23:30','23:55'][i]}</div></div>`,A);
+  const [x,y]=SSL[i];e.style.left=x+'px';e.style.top=y+'px';const t0=5.6+i*BEAT/2;sfx(t0,'tick',.5);sfx(t0+1.05,'vanish',.45);return {e,t0}});
+const BUBS=[['לינק?',80,520],['יש למישהו לינק??',380,700],['שלחו בפרטי 🙏',60,900],['איפה זה בכלל?',420,1500],['לינק???',120,1660],['נגמרו הכרטיסים 😩',420,1800]];
+const bubs=BUBS.map((b,i)=>{const e=add(`<div class="bub">${b[0]}</div>`,A);e.style.left=b[1]+'px';e.style.top=b[2]+'px';const t0=7.65+i*BEAT/2;sfx(t0,'msg',.6);return {e,t0,rot:(RN()-.5)*8}});
+const stamp=add(`<div class="stamp"><span>SOLD OUT</span></div>`,A);sfx(9.05,'stamp',.9);
+const sofa=add(`<div class="sofa"><div style="left:60px;top:40px;width:660px;height:230px;border-radius:60px"></div><div style="left:0;top:150px;width:150px;height:250px"></div><div style="left:630px;top:150px;width:150px;height:250px"></div><div style="left:100px;top:230px;width:580px;height:150px;background:#a79fb8"></div><div style="left:120px;top:395px;width:40px;height:40px;background:#6b6280;border-radius:8px"></div><div style="left:620px;top:395px;width:40px;height:40px;background:#6b6280;border-radius:8px"></div><div style="left:420px;top:200px;width:110px;height:40px;background:#16121c;border-radius:14px;transform:rotate(-8deg)"></div></div>`,A);
+const zz=[0,1,2].map(i=>add(`<div class="zz" style="font-size:${60+i*24}px">z</div>`,A));
+sfx(9.75,'fall',.7);
+
+/* ================= Q: the question (13-15) ================= */
+const Q=add(`<div class="layer" id="Q"><div class="qq" style="position:absolute;left:0;right:0;top:820px;text-align:center;direction:rtl;font-weight:900;font-size:150px"><span class="q1">לאן</span> <span class="q2">הולכים</span><span class="q3 pink">?</span></div></div>`);
+const q1=Q.querySelector('.q1'),q2=Q.querySelector('.q2'),q3=Q.querySelector('.q3'),qq=Q.querySelector('.qq');
+[q1,q2,q3].forEach(e=>e.style.display='inline-block');
+sfx(13.05,'riser',.8);sfx(DROP,'drop',1);
+
+/* ================= B: solution (15-25.4) ================= */
+const B=add(`<div class="layer" id="B"><div class="ph" style="background-image:url(photos/19_bded670b.webp)"></div></div>`);
+const bph=B.querySelector('.ph');
+const DR=rng(4242);DR();DR();const dots=[...Array(16)].map((_,i)=>{const r=DR;const s=20+r()*70;const e=add(`<div class="dot" style="width:${s}px;height:${s}px;background:${['#ff3fd0','#33d6ff','#a24bff','#ffb340'][i%4]};opacity:${.25+r()*.35}"></div>`,B);return {e,x:r()*1080,y:r()*1920,v:20+r()*50,ph:r()*6}});
+const wm=add(`<img class="wm" src="logo_wordmark.png">`,B);
+const phone=add(`<div class="phone"><div class="scr"><img class="sc"><div class="tap"></div></div></div>`,B);
+const scr=phone.querySelector('.sc'),tap=phone.querySelector('.tap');
+const bcap=add(`<div class="bcap"></div>`,B);
+const CHIPS=[['האוס','linear-gradient(90deg,#ff4fd8,#b44bff)',40,640],['טכנו','#1d1430',800,800],["ג'אז",'#ffb340',30,1180],['פופ','#33d6ff',830,1380]];
+const chips=CHIPS.map(c=>{const e=add(`<div class="chip" style="background:${c[1]};left:${c[2]}px;top:${c[3]}px">${c[0]}</div>`,B);return e});
+const icon=add(`<div id="icon"><img src="logo_app_icon.png" style="width:300px;height:300px"></div>`,B);
+const rings=[0,1,2].map(()=>add(`<div class="ring"></div>`,B));
+// screen segments: [start,end, folder, capStart, capEnd]
+const SEG=[[15.8,19.25,'s2',.35,3.85],[19.25,21.25,'s5',0,1.9],[21.25,23.3,'s3',.55,3.6],[23.3,25.45,'s4',0,2.1]];
+SEG.slice(1).forEach(s=>sfx(s[0],'swoosh',.6));
+// tap targets (css px in 390-wide viewport) from capture rects
+let RECTS={s3_house:[77.6,153.1,143.2,157.5],s4_follow:[167.2,540.6,117.6,52]};
+const capCaps=[[15.8,19.25,'כל המסיבות<br>במקום <span class="pink">אחד.</span>'],[19.25,21.25,'מה קורה<br><span class="pink">סביבכם</span> הערב'],[21.25,23.3,'בוחרים<br><span class="pink">וייב.</span>'],[23.3,25.45,'עוקבים אחרי<br><span class="pink">האמנים.</span>']];
+
+/* ================= E: end (25.45-31) ================= */
+const E=add(`<div class="layer" id="E"></div>`);
+const SR=rng(977);SR();SR();const sparks=[...Array(46)].map((_,i)=>{const r=SR;const a=r()*Math.PI*2,sp=380+r()*620;const e=add(`<div class="spark" style="background:${['#ff3fd0','#33d6ff','#ffb340','#fff','#a24bff'][i%5]}"></div>`,E);return {e,a,sp,d:.9+r()*.8}});
+const elogo=add(`<div style="position:absolute;left:280px;top:420px;width:520px"><img src="logo_card.png" style="width:520px;border-radius:84px;box-shadow:0 0 140px rgba(255,63,208,.5)"></div>`,E);
+const el1=add(`<div style="position:absolute;left:0;right:0;top:1030px;text-align:center;direction:rtl;font-weight:900;font-size:104px;line-height:1.05">לאן הולכים?<br><span class="pink">אני בפנים.</span></div>`,E);
+const el2=add(`<div style="position:absolute;left:0;right:0;top:1340px;text-align:center"><span style="display:inline-block;padding:20px 44px;border-radius:60px;background:#fff;color:#16121c;font-weight:800;font-size:44px;direction:rtl">בקרוב ב־App Store וב־Google Play</span></div>`,E);
+const el3=add(`<div style="position:absolute;left:0;right:0;top:1480px;text-align:center;font-weight:700;font-size:56px;letter-spacing:2px;direction:ltr">wawg.live</div>`,E);
+sfx(25.5,'boom',.8);sfx(25.75,'chime',.6);
+
+const show=(l,a,b,t)=>{const on=t>=a&&t<b;l.style.display=on?'block':'none';return on};
+const pending=[];
+window.R=async function(t){
+  /* ---- A ---- */
+  if(show(A,0,13,t)){
+    const g=Math.max(0,t-9.75),fall=y=>`translateY(${900*g*g}px) rotate(${g*40}deg)`; // gravity after 9.75
+    // caption
+    let c='',ck=0;
+    if(t<3.6){c='חמישי.<br><span class="pink">22:00.</span>';ck=P(t,.25,.6)}
+    else if(t<5.55){c=`${Math.max(1,Math.round(20*eo(P(t,3.55,5.4))))} קבוצות.`;ck=1}
+    else if(t<7.6){c='סטוריז<br>ש<span class="pink">נעלמים.</span>';ck=P(t,5.55,5.8)}
+    else if(t<9.75){c='"<span class="pink">לינק</span>?"';ck=P(t,7.6,7.85)}
+    else if(t>=10.35){c='עוד ערב<br>על <span class="pink">הספה.</span>';ck=P(t,10.35,10.65)}
+    capA.innerHTML=c;capA.style.opacity=ck;capA.style.transform=`translateY(${(1-eo(ck))*30}px)`;
+    // phone + badge
+    const pk=eo(P(t,.1,.5));const n=cards.filter(o=>t>=o.t0).length+stories.filter(o=>t>=o.t0).length+bubs.filter(o=>t>=o.t0).length;
+    badge.textContent=n>0?(n>=20?'99+':String(n*4)):'0';badge.style.opacity=n>0?1:0;
+    const shake=t>3.5&&t<9.75?Math.sin(t*80)*Math.min(8,(t-3.5)*1.5):0;
+    fph.style.opacity=t<10.6?1:0;fph.style.transform=`translateX(${shake}px) scale(${lerp(.85,1,pk)}) ${t>9.75?fall(0):''}`;
+    cards.forEach(o=>{if(t<o.t0){o.e.style.opacity=0;return}const k=P(t,o.t0,o.t0+.2);o.e.style.opacity=1;o.e.style.transform=`rotate(${o.rot}deg) scale(${back(k)}) ${t>9.75?fall():''}`});
+    stories.forEach(o=>{const lt=t-o.t0;if(lt<0||lt>1.25){o.e.style.opacity=0;return}
+      const k=P(lt,0,.2),v=P(lt,1.05,1.25),left=1-P(lt,.15,1.05);o.e.style.opacity=1-v;
+      o.e.style.background=`conic-gradient(#ff3fd0 ${left*360}deg,#d6cfc4 0)`;o.e.style.transform=`scale(${k<1?back(k):1+v*.4})`});
+    bubs.forEach(o=>{if(t<o.t0){o.e.style.opacity=0;return}const k=P(t,o.t0,o.t0+.2);o.e.style.opacity=1;o.e.style.transform=`rotate(${o.rot}deg) scale(${back(k)}) ${t>9.75?fall():''}`});
+    const sk=P(t,9.05,9.3);stamp.style.opacity=sk>0?1:0;stamp.firstChild.style.transform=`rotate(-10deg) scale(${sk>0?lerp(2.2,1,eo(sk)):0}) ${t>9.75?fall():''}`;
+    // sofa
+    const so=P(t,10.25,10.6);sofa.style.opacity=so>0?1:0;sofa.style.transform=`translateY(${(1-back(so))*-300}px)`;
+    zz.forEach((z,i)=>{const lt=t-(11+i*.5);if(lt<0){z.style.opacity=0;return}const p=(lt%1.6)/1.6;z.style.opacity=Math.sin(p*Math.PI);z.style.left=(690+i*50+p*40)+'px';z.style.top=(980-i*60-p*160)+'px'});
+    A.style.opacity=1-P(t,12.7,13);
+  }
+  /* ---- Q ---- */
+  if(show(Q,13,DROP,t)){popIn(q1,t,13.15);popIn(q2,t,13.5);popIn(q3,t,13.95,.25);
+    const imp=eio(P(t,14.55,15));qq.style.transform=`scale(${1-imp*.98}) rotate(${imp*-20}deg)`;qq.style.opacity=1-P(t,14.85,15)}
+  /* ---- B ---- */
+  if(show(B,DROP,25.45,t)){const bt=t-DROP;
+    bph.style.transform=`scale(${1.1+bt*.01})`;
+    dots.forEach(d=>{d.e.style.left=(d.x+Math.sin(bt*.7+d.ph)*30)+'px';d.e.style.top=((d.y-bt*d.v)%1920+1920)%1920+'px'});
+    // icon burst 15-15.9 then phone rises
+    const ik=P(t,DROP,DROP+.3),io=P(t,15.55,15.85);icon.style.display=io<1?'block':'none';
+    icon.style.transform=`scale(${ik>0?back(ik)*(1+io*1.6):0})`;icon.style.opacity=1-io;
+    rings.forEach((r,i)=>{const k=P(t,DROP+i*.12,DROP+i*.12+.7);const s=40+k*1100;r.style.width=r.style.height=s+'px';r.style.margin=`${-s/2}px 0 0 ${-s/2}px`;r.style.opacity=k>0&&k<1?(1-k):0});
+    const pr=eo(P(t,15.55,16.05));phone.style.opacity=pr;phone.style.transform=`translateY(${(1-pr)*500}px) scale(${lerp(.8,1,pr)})`;
+    wm.style.opacity=.9*pr;
+    // screens
+    const seg=SEG.find(s=>t>=s[0]&&t<s[1])||SEG[0];const f=lerp(seg[3],seg[4],P(t,seg[0],seg[1]));
+    const idx=Math.min({s2:119,s3:119,s4:119,s5:149}[seg[2]],Math.max(0,Math.round(f*30)));
+    const src=`cap/${seg[2]}/${String(idx).padStart(4,'0')}.jpg`;if(!scr.src.endsWith(src)){scr.src=src;pending.push(scr.decode().catch(()=>{}))}
+    // per-segment push-in on cut
+    const sk=eo(P(t,seg[0],seg[0]+.3));phone.querySelector('.scr').style.transform=`scale(${t<16?1:lerp(1.04,1,sk)})`;
+    // taps
+    let tp=null,tt=0;const S=600/390;
+    if(seg[2]==='s3'){tt=21.25+(1.0-seg[3])/((seg[4]-seg[3])/(seg[1]-seg[0]));tp=RECTS.s3_house}
+    if(seg[2]==='s4'){tt=24.0;tp=RECTS.s4_follow}
+    if(tp){const k=P(t,tt-.15,tt+.35);tap.style.left=(tp[0]+tp[2]/2)*S+'px';tap.style.top=(tp[1]+tp[3]/2)*S+'px';tap.style.opacity=k>0&&k<1?Math.sin(k*Math.PI):0;tap.style.transform=`scale(${.6+k*.7})`}else tap.style.opacity=0;
+    // caption
+    const cc=capCaps.find(c=>t>=c[0]&&t<c[1]);if(cc){if(bcap.dataset.k!==cc[2]){bcap.innerHTML=cc[2];bcap.dataset.k=cc[2]}
+      const k=eo(P(t,Math.max(cc[0],15.9),Math.max(cc[0],15.9)+.3)),o=1-P(t,cc[1]-.15,cc[1]);bcap.style.opacity=t<15.9?0:k*o;bcap.style.transform=`translateY(${(1-k)*40}px)`}
+    // genre chips during vibe segment
+    chips.forEach((c,i)=>{const k=P(t,21.35+i*BEAT/2,21.6+i*BEAT/2),o=P(t,23.1,23.3);c.style.opacity=k>0?(1-o):0;c.style.transform=`scale(${k>0?back(k):0}) translateY(${Math.sin((t+i)*2)*10}px) rotate(${(i%2?3:-3)}deg)`});
+    B.style.opacity=1-P(t,25.3,25.45);
+  }
+  /* ---- E ---- */
+  if(show(E,25.45,99,t)){const et=t-25.45;
+    sparks.forEach(s=>{const k=P(et,0,s.d);const r=eo(k)*s.sp;s.e.style.transform=`translate(${Math.cos(s.a)*r}px,${Math.sin(s.a)*r+k*k*220}px) scale(${1-k*.6})`;s.e.style.opacity=k>0&&k<1?1-k:0});
+    popIn(elogo,t,25.5,.35);
+    const a=eo(P(t,26.15,26.5));el1.style.opacity=a;el1.style.transform=`translateY(${(1-a)*40}px)`;
+    const b=eo(P(t,27.4,27.75));el2.style.opacity=b;el2.style.transform=`translateY(${(1-b)*30}px)`;
+    const c=eo(P(t,28.0,28.35));el3.style.opacity=c;
+    elogo.style.transform+=` translateY(${Math.sin(et*2)*6}px)`;
+  }
+  // flashes on the drop and the end card
+  let fl=0;for(const s of [DROP,25.45])if(t>=s&&t<s+.14)fl=.75*(1-(t-s)/.14);flash.style.opacity=fl;
+  await Promise.all(pending.splice(0));
+  await Promise.all([...stage.querySelectorAll('img')].filter(i=>i.offsetParent&&!i.complete).map(i=>i.decode().catch(()=>{})));
+};
+window.SFX=SFX;
+const pre=['logo_card.png','logo_app_icon.png','logo_wordmark.png','photos/19_bded670b.webp',...PH.map(p=>`photos/${p}.webp`)].map(s=>{const i=new Image();i.src=s;return i.decode().catch(()=>{})});
+window.READY=Promise.all([document.fonts.ready,...pre]).then(()=>R(0)).then(()=>true);
+</script></body></html>

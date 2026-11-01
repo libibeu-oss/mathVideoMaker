@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="he"><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts.css">
+<style>
+:root{--deep:#0b0418;--pink:#ff3fd0;--pink2:#ff7ae0;--vio:#a24bff;--cyan:#33d6ff;--card:#2a1550;--card2:#341a63;--mut:#c4b3e6;--green:#2ee59d}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:var(--deep);font-family:Rubik,sans-serif;color:#fff}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--deep)}
+.scene{position:absolute;inset:0;overflow:hidden;opacity:0;display:none}
+.fill{position:absolute;inset:0}
+canvas.fill{width:1080px;height:1920px}
+.photo-bg{position:absolute;inset:-40px;background-size:cover;background-position:center}
+.phone{position:absolute;left:254px;top:90px;width:572px;height:1201px;border-radius:86px;background:#06020e;padding:16px;
+  box-shadow:0 0 0 3px #4a2f7a,0 0 0 9px #150a2a,0 50px 140px rgba(0,0,0,.65),0 0 160px rgba(162,75,255,.4);transform-origin:50% 55%}
+.scr{position:relative;width:540px;height:1169px;border-radius:70px;overflow:hidden;background:#1d0b3d;direction:rtl}
+.scr img.app{position:absolute;inset:0;width:540px;height:1169px}
+.island{position:absolute;top:18px;left:50%;width:150px;height:44px;margin-left:-75px;background:#000;border-radius:26px;z-index:60}
+.tap{position:absolute;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;background:rgba(255,255,255,.35);border:4px solid rgba(255,255,255,.85);opacity:0;z-index:70}
+.notif{position:absolute;top:80px;right:18px;left:18px;padding:18px 20px;border-radius:30px;background:rgba(36,20,66,.94);display:flex;gap:16px;align-items:center;box-shadow:0 18px 50px rgba(0,0,0,.55);z-index:65;border:1px solid rgba(255,255,255,.08)}
+.notif img{flex:none;width:72px;height:72px;border-radius:18px;object-fit:cover}
+.notif b{display:block;font-size:24px;font-weight:700}.notif span{display:block;font-size:22px;color:#e3d8ff;line-height:1.3}
+.notif small{position:absolute;top:14px;left:22px;font-size:18px;color:#a996cf}
+.btn{position:absolute;right:28px;left:28px;height:92px;border-radius:46px;background:linear-gradient(90deg,#ff4fd8,#b44bff);display:grid;place-items:center;font-size:32px;font-weight:700;box-shadow:0 10px 30px rgba(255,63,208,.45)}
+.h1{font-size:44px;font-weight:800;line-height:1.1}
+.mut{color:var(--mut)}
+#sub{position:absolute;left:96px;right:96px;bottom:400px;text-align:center;direction:rtl;font-weight:800;font-size:74px;line-height:1.14;z-index:200;
+  text-shadow:0 3px 0 rgba(58,18,120,.9),0 6px 26px rgba(124,58,237,.9),0 0 6px rgba(30,8,70,.95)}
+#sub em{font-style:normal;color:var(--pink);text-shadow:0 0 18px rgba(255,63,208,.85),0 0 42px rgba(255,63,208,.55),0 3px 0 rgba(58,18,120,.9)}
+#wm{position:absolute;top:56px;left:52px;width:150px;z-index:210;opacity:.9;filter:drop-shadow(0 4px 14px rgba(0,0,0,.6))}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:300}
+.star{display:inline-block;width:76px;height:76px;margin:0 5px}
+.ph{position:absolute;width:148px;height:148px;border-radius:22px;overflow:hidden;background-size:cover;background-position:center}
+</style></head>
+<body><div id="stage">
+<img id="wm" src="img/01_3e4371e9.png">
+<div id="sub"></div>
+<div id="flash"></div>
+</div>
+<script>
+"use strict";
+const W=1080,H=1920,FPS=30,K=540/390;
+const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const P=(t,a,b)=>cl((t-a)/(b-a));
+const eo=x=>1-Math.pow(1-x,3);
+const eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const back=x=>{const c1=1.9,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+const lerp=(a,b,x)=>a+(b-a)*x;
+function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+const $=(h)=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild};
+const stage=document.getElementById('stage'),subEl=document.getElementById('sub');
+const LOGO='img/31_0ffe4c55.png';
+const IMG={stage:'img/09_dbd71b1f.webp',beams:'img/19_bded670b.webp',purple:'img/22_602c8e3e.webp',colorful:'img/12_40227286.webp',sunset:'img/33_4165e4d5.webp',hearts:'img/27_3b0270fa.webp',crowd:'img/20_90b791a3.webp',sunhands:'img/24_dc3215b4.webp',orange:'img/34_ee642c36.webp'};
+const pending=[];
+
+function phone(scene,capDir,nFrames){
+  const ph=$(`<div class="phone"><div class="scr"><div class="island"></div></div></div>`);scene.appendChild(ph);
+  const scr=ph.querySelector('.scr');let img=null,last=-1;
+  if(capDir){img=document.createElement('img');img.className='app';scr.appendChild(img)}
+  const setFrame=(lt)=>{if(!img)return;const i=Math.max(0,Math.min(nFrames-1,Math.floor(lt*FPS+1e-6)));if(i===last)return;last=i;
+    img.src=`cap/${capDir}/${String(i).padStart(4,'0')}.jpg`;pending.push(img.decode().catch(()=>{}))};
+  return {ph,scr,setFrame};
+}
+const A=(x,y)=>[x*K,y*K];
+function tapAt(scr,ax,ay){const [x,y]=A(ax,ay);const d=$(`<div class="tap" style="left:${x}px;top:${y}px"></div>`);scr.appendChild(d);return d}
+function tapAnim(el,t,t0){const k=P(t,t0-.12,t0+.35);el.style.opacity=(t<t0-.12||t>t0+.35)?0:(k<.25?k*4:1-(k-.25)/.75)*.9;el.style.transform=`scale(${lerp(1.25,.75,eo(cl(k*2)))})`}
+function notif(scr,title,body,top=80){const n=$(`<div class="notif" style="top:${top}px"><img src="${LOGO}"><div><b>${title}</b><span>${body}</span></div><small>עכשיו</small></div>`);scr.appendChild(n);return n}
+function bokeh(scene,seed){
+  const c=document.createElement('canvas');c.width=W;c.height=H;c.className='fill';scene.appendChild(c);
+  const cols=['255,63,208','162,75,255','51,214,255','255,150,60'];const r=rng(seed),pts=[];
+  for(let i=0;i<32;i++)pts.push({x:r()*W,y:r()*H,s:30+r()*120,v:10+r()*30,c:cols[i%4],a:.06+r()*.2,ph:r()*6});
+  return t=>{const g=c.getContext('2d');g.clearRect(0,0,W,H);for(const p of pts){const y=(p.y-p.v*t*2+H*4)%(H+300)-150;const a=p.a*(.7+.3*Math.sin(t*1.3+p.ph));
+    const gr=g.createRadialGradient(p.x,y,0,p.x,y,p.s);gr.addColorStop(0,`rgba(${p.c},${a})`);gr.addColorStop(1,`rgba(${p.c},0)`);g.fillStyle=gr;g.beginPath();g.arc(p.x,y,p.s,0,7);g.fill()}}
+}
+function photoBg(scene,src,dark=.55,extra=''){const d=$(`<div class="photo-bg" style="background-image:url(${src});${extra}"></div>`);scene.appendChild(d);
+  scene.appendChild($(`<div class="fill" style="background:linear-gradient(180deg,rgba(11,4,24,${dark*.7}) 0%,rgba(11,4,24,${dark}) 55%,rgba(11,4,24,${Math.min(.92,dark+.25)}) 100%)"></div>`));return d}
+function qr(canvas,seed,cells=25){const s=canvas.width,q=canvas.getContext('2d'),u=s/cells,r=rng(seed);q.fillStyle='#fff';q.fillRect(0,0,s,s);q.fillStyle='#1d0b3d';
+  for(let y=0;y<cells;y++)for(let x=0;x<cells;x++)if(r()<.5)q.fillRect(x*u,y*u,u+.5,u+.5);
+  for(const [fx,fy] of [[0,0],[cells-7,0],[0,cells-7]]){q.fillStyle='#fff';q.fillRect(fx*u-u,fy*u-u,9*u,9*u);q.fillStyle='#1d0b3d';q.fillRect(fx*u,fy*u,7*u,7*u);q.fillStyle='#fff';q.fillRect((fx+1)*u,(fy+1)*u,5*u,5*u);q.fillStyle='#1d0b3d';q.fillRect((fx+2)*u,(fy+2)*u,3*u,3*u)}}
+
+const SUBS=[
+ [0,4,'לאן הולכים <em>הערב</em>?'],
+ [4,8,'כל מה שקורה <em>סביבכם</em>'],
+ [8,12,'בוחרים <em>וייב</em>, מקבלים ערב'],
+ [12,16,'עוקבים אחרי <em>האמנים</em> שאוהבים'],
+ [16,21,'כרטיס, תשלום וקבלה.<br><em>הכול</em> באפליקציה'],
+ [21,25,'<em>הנחות</em> ומבצעים ישר אליך'],
+ [25,28,'לא <em>מפספסים</em> אף ערב'],
+ [28,32,'נכנסים <em>בסריקה</em>'],
+ [32,36,'<em>מדרגים</em>, מעלים תמונות, משתפים'],
+];
+let curSub=-1;
+const SUBS4=[
+ [13.6,17.9,'כל המסיבות, ההופעות והפסטיבלים <em>סביבכם</em>'],
+ [18.0,21.5,'בוחרים <em>וייב</em>, קונים כרטיס, ונכנסים'],
+];
+function updSub(t,L=SUBS4){let idx=-1;for(let i=0;i<L.length;i++)if(t>=L[i][0]&&t<L[i][1])idx=i;
+  if(idx<0){subEl.style.opacity=0;return}
+  if(idx!==curSub){subEl.innerHTML=L[idx][2];curSub=idx}
+  const [a,b]=L[idx];const tin=a+.15,tout=b-.28;const kin=eo(P(t,tin,tin+.2)),kout=P(t,tout,tout+.2);
+  subEl.style.opacity=kin*(1-kout);subEl.style.transform=`translateY(${(1-kin)*28-kout*10}px)`}
+
+const S=[];
+function scene(a,b,build){const el=document.createElement('div');el.className='scene';stage.insertBefore(el,subEl);S.push({a,b,el,upd:build(el)})}
+
+// 1 — home at night, phone wakes on the real home screen (0-4)
+scene(0,4,el=>{
+  el.appendChild($(`<div class="fill" style="background:linear-gradient(180deg,#0b0620 0%,#1a0d3a 55%,#2a1050 100%)"></div>`));
+  const city=document.createElement('canvas');city.width=W;city.height=H;city.className='fill';el.appendChild(city);
+  const g=city.getContext('2d');const r=rng(7);
+  g.fillStyle='rgba(255,230,200,.9)';g.beginPath();g.arc(840,300,64,0,7);g.fill();
+  for(let layer=0;layer<2;layer++){let x=-20;while(x<W){const w=70+r()*130,h=(layer?380:620)+r()*(layer?260:420);const y=H-h-(layer?0:180);
+    g.fillStyle=layer?'#0b0518':'#170b33';g.fillRect(x,y,w,h+200);
+    for(let wy=y+20;wy<H-40;wy+=34)for(let wx=x+12;wx<x+w-14;wx+=26)if(r()<(layer?.18:.3)){g.fillStyle=r()<.5?'rgba(255,200,120,.55)':'rgba(255,120,220,.4)';g.fillRect(wx,wy,12,16)}
+    x+=w+6}}
+  el.appendChild($(`<div class="fill" style="border:46px solid #0a0516;box-shadow:inset 0 0 200px rgba(0,0,0,.9)"></div>`));
+  el.appendChild($(`<div style="position:absolute;left:526px;top:0;width:28px;height:1920px;background:#0a0516"></div>`));
+  const glow=$(`<div style="position:absolute;left:140px;top:40px;width:800px;height:1300px;background:radial-gradient(closest-side,rgba(200,90,255,.35),transparent);opacity:0"></div>`);el.appendChild(glow);
+  const P1=phone(el,'s1',120);
+  const off=$(`<div class="fill" style="background:#000;z-index:55"></div>`);P1.scr.appendChild(off);
+  const tm=$(`<div style="position:absolute;top:150px;left:0;right:0;text-align:center;z-index:56;direction:ltr"><div style="font-size:30px;font-weight:500;opacity:.8">שבת, 21:30</div><div style="font-size:150px;font-weight:300;line-height:1">21:30</div></div>`);P1.scr.appendChild(tm);
+  return (lt)=>{P1.setFrame(lt);
+    const k=eio(P(lt,0,4));P1.ph.style.transform=`translateY(${lerp(150,0,k)}px) scale(${lerp(.86,.98,k)}) rotate(${lerp(-4,0,k)}deg)`;
+    city.style.transform=`scale(${lerp(1.08,1,k)})`;
+    const lockOn=P(lt,.35,.55),appOn=P(lt,1.3,1.6);
+    off.style.opacity=1-appOn;off.style.background=`linear-gradient(170deg,rgba(59,22,112,${lockOn}),rgba(0,0,0,1) 70%)`;tm.style.opacity=lockOn*(1-appOn);
+    glow.style.opacity=appOn;
+  };
+});
+
+// 2 — around you: real home feed scroll (4-8)
+scene(4,8,el=>{
+  photoBg(el,IMG.colorful,.75,'filter:blur(18px) saturate(1.2)');
+  const bk=bokeh(el,11);const P2=phone(el,'s2',120);
+  return (lt,t)=>{bk(t);P2.setFrame(lt);const k=eio(P(lt,0,4));P2.ph.style.transform=`scale(${lerp(.95,1.02,k)})`};
+});
+
+// 3 — pick a vibe: tap "האוס" → house events (8-12)
+scene(8,12,el=>{
+  photoBg(el,IMG.purple,.75,'filter:blur(16px)');
+  const bk=bokeh(el,23);const P3=phone(el,'s3',120);
+  const tp=tapAt(P3.scr,77.6+71.6,153+78);
+  return (lt,t)=>{bk(t);P3.setFrame(lt);tapAnim(tp,lt,.95);if(lt>=1.15)tp.style.opacity=0;
+    const k=eio(P(lt,0,4));P3.ph.style.transform=`perspective(1600px) rotateY(${lerp(7,-4,k)}deg) scale(${lerp(.96,1.02,k)})`};
+});
+
+// 4 — follow the artist + notification (12-16)
+scene(12,16,el=>{
+  photoBg(el,'img/03_e587df33.webp',.78,'filter:blur(16px)');
+  const bk=bokeh(el,31);const P4=phone(el,'s4',120);
+  const [fx,fy]=A(167.19,540.6),fw=117.64*K,fh=52*K;
+  const pill=$(`<div style="position:absolute;left:${fx}px;top:${fy}px;width:${fw}px;height:${fh}px;border-radius:${fh/2}px;background:linear-gradient(90deg,#ff4fd8,#b44bff);display:grid;place-items:center;font-size:27px;font-weight:700;opacity:0;z-index:20;box-shadow:0 0 30px rgba(255,63,208,.6)">✓ במעקב</div>`);P4.scr.appendChild(pill);
+  const heart=$(`<div style="position:absolute;left:${fx+fw/2-50}px;top:${fy-40}px;width:100px;text-align:center;font-size:110px;line-height:1;opacity:0;z-index:66;color:#ff3fd0;text-shadow:0 0 30px #ff3fd0">♥</div>`);P4.scr.appendChild(heart);
+  const tp=tapAt(P4.scr,167.19+58.8,540.6+26);
+  const nt=notif(P4.scr,'Djadja מופיע ב־Neon Bloom','יום שישי · 23:00 · מחסן 9, תל אביב');
+  return (lt,t)=>{bk(t);P4.setFrame(lt);
+    const k=eio(P(lt,0,4));P4.ph.style.transform=`scale(${lerp(1,1.04,k)}) translateY(${lerp(20,-10,k)}px)`;
+    // capture.js scrolls this page 70px (app px) between 2.2s and 4s; keep the overlay glued to the button
+    const sy=eio(P(lt,2.2,4))*70*K;
+    tapAnim(tp,lt,.9);const pk=P(lt,.9,1.05);pill.style.opacity=pk;pill.style.transform=`translateY(${-sy}px) scale(${pk>0&&pk<1?1+.15*Math.sin(pk*Math.PI):1})`;
+    const hk=P(lt,.92,1.7);heart.style.opacity=hk>0&&hk<1?Math.sin(hk*Math.PI):0;heart.style.transform=`translateY(${-hk*170}px) scale(${.6+hk*.9})`;
+    const nk=eo(P(lt,1.9,2.3));nt.style.transform=`translateY(${(1-nk)*-260}px)`;nt.style.opacity=nk;
+  };
+});
+
+// 5 — ticket, payment, receipt (16-21) — the drop
+scene(16,21,el=>{
+  photoBg(el,IMG.stage,.7,'filter:blur(10px)');
+  const rays=$(`<div class="fill" style="background:repeating-conic-gradient(from 0deg at 50% 45%,rgba(255,63,208,.12) 0 8deg,transparent 8deg 22deg)"></div>`);el.appendChild(rays);
+  const P5=phone(el,'s5',150);
+  const tp=tapAt(P5.scr,23+68.5,771+25);
+  const dim=$(`<div class="fill" style="background:rgba(8,3,20,.6);z-index:40;opacity:0"></div>`);P5.scr.appendChild(dim);
+  const sheet=$(`<div style="position:absolute;left:0;right:0;bottom:0;height:600px;border-radius:44px 44px 0 0;background:#24124a;padding:30px 34px;z-index:45;box-shadow:0 -20px 60px rgba(0,0,0,.6);border-top:1px solid rgba(255,255,255,.1)">
+     <div style="width:64px;height:7px;border-radius:4px;background:#6a55a0;margin:0 auto 24px"></div>
+     <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:36px;font-weight:800">תשלום</div><div style="font-size:24px;color:#c4b3e6;direction:ltr">Neon Bloom</div></div>
+     <div style="margin-top:22px;padding:22px;border-radius:22px;background:#331b63;font-size:27px;display:flex;justify-content:space-between"><span>כניסה רגילה × 1</span><b>180 ₪</b></div>
+     <div style="margin-top:14px;padding:22px;border-radius:22px;background:#331b63;font-size:27px;display:flex;justify-content:space-between"><span>אמצעי תשלום</span><span style="direction:ltr">VISA •••• 4242</span></div>
+     <div class="ring" style="position:absolute;left:50%;bottom:50px;width:140px;height:140px;margin-left:-70px;border-radius:50%;display:grid;place-items:center"></div></div>`);P5.scr.appendChild(sheet);
+  const ring=sheet.querySelector('.ring');
+  const rec=$(`<div class="fill" style="background:linear-gradient(180deg,#2a1158,#1d0b3d);z-index:50;padding:86px 30px 0">
+     <div style="display:flex;align-items:center;gap:14px;justify-content:flex-start"><div style="width:56px;height:56px;border-radius:50%;background:var(--green);display:grid;place-items:center;font-size:34px;font-weight:800;color:#06301f">✓</div><div class="h1" style="font-size:38px">הכרטיס שלך מוכן</div></div>
+     <div style="margin-top:22px;border-radius:30px;background:#fff;color:#1d0b3d;overflow:hidden">
+       <div style="height:150px;background:url(${IMG.stage}) center/cover;position:relative"><div style="position:absolute;bottom:12px;right:18px;font-size:36px;font-weight:800;color:#fff;direction:ltr;text-shadow:0 2px 10px #000">Neon Bloom</div></div>
+       <div style="padding:16px 20px 20px;text-align:center"><div style="font-size:22px;color:#6b5a90">יום שישי, 23 אוק׳ · 23:00 · מחסן 9</div>
+       <canvas class="qr" width="270" height="270" style="margin:14px auto 0;display:block"></canvas></div></div>
+     <div style="margin-top:18px;padding:20px 22px;border-radius:24px;background:#331b63;font-size:24px;line-height:1.75">
+       <div style="display:flex;justify-content:space-between"><span>קבלה מס׳</span><span style="direction:ltr">#WG-20871</span></div>
+       <div style="display:flex;justify-content:space-between"><span>שולם</span><b>180 ₪</b></div>
+       <div style="display:flex;justify-content:space-between"><span>הקבלה נשלחה למייל</span><span style="color:var(--green)">✓</span></div></div></div>`);P5.scr.appendChild(rec);
+  qr(rec.querySelector('.qr'),99);
+  return (lt,t)=>{P5.setFrame(lt);
+    const beat=Math.pow(1-((t-16)%.5)/.5,3);rays.style.opacity=.5+.5*beat;rays.style.transform=`rotate(${lt*8}deg) scale(1.4)`;
+    const k=eo(P(lt,0,.35));P5.ph.style.transform=`scale(${lerp(1.12,1,k)*(1+.012*beat)})`;
+    tapAnim(tp,lt,.75);
+    const sk=eo(P(lt,1.0,1.4));sheet.style.transform=`translateY(${(1-sk)*660}px)`;dim.style.opacity=sk;
+    const rp=P(lt,2.1,3.0),done=lt>=3.0;
+    ring.style.background=done?'var(--green)':`conic-gradient(#ff3fd0 ${rp*360}deg,#4a2f7a 0)`;
+    ring.innerHTML=done?'<span style="font-size:84px;font-weight:800;color:#06301f">✓</span>':'<div style="width:110px;height:110px;border-radius:50%;background:#24124a"></div>';
+    ring.style.transform=`scale(${done?back(P(lt,3.0,3.3)):1})`;
+    const rk=eo(P(lt,3.55,3.95));rec.style.opacity=rk;rec.style.transform=`translateY(${(1-rk)*120}px)`;
+  };
+});
+
+// 6 — real offers page + deal notification + confetti (21-25)
+scene(21,25,el=>{
+  photoBg(el,IMG.crowd,.75,'filter:blur(14px)');
+  const bk=bokeh(el,51);const P6=phone(el,'s6',120);
+  const nt=notif(P6.scr,'הטבה חדשה בשבילך 🎉','15% הנחת חברים לפסטיבל Prism');
+  const cf=document.createElement('canvas');cf.width=W;cf.height=H;cf.className='fill';el.appendChild(cf);
+  const r=rng(5),parts=[];for(let i=0;i<170;i++){const a=r()*Math.PI*2,s=500+r()*1100;parts.push({vx:Math.cos(a)*s,vy:Math.sin(a)*s-700,c:['#ff3fd0','#a24bff','#ffb340','#ffffff','#33d6ff'][i%5],w:10+r()*14,rot:r()*6,vr:(r()-.5)*14})}
+  return (lt,t)=>{bk(t);P6.setFrame(lt);
+    const k=eio(P(lt,0,4));P6.ph.style.transform=`perspective(1600px) rotateY(${lerp(-6,4,k)}deg) scale(${lerp(.97,1.02,k)})`;
+    const nk=eo(P(lt,.6,1.0));nt.style.transform=`translateY(${(1-nk)*-260}px)`;nt.style.opacity=nk;
+    const g=cf.getContext('2d');g.clearRect(0,0,W,H);const ct=lt-1.0;if(ct>0&&ct<3){for(const p of parts){const x=540+p.vx*ct*.9/(1+ct*1.2),y=420+p.vy*ct/(1+ct*1.2)+420*ct*ct;
+      g.save();g.globalAlpha=cl(1-ct/3);g.translate(x,y);g.rotate(p.rot+p.vr*ct);g.fillStyle=p.c;g.fillRect(-p.w/2,-p.w/4,p.w,p.w/2);g.restore()}}
+  };
+});
+
+// 7 — reminder on the lock screen (25-28)
+scene(25,28,el=>{
+  el.appendChild($(`<div class="fill" style="background:linear-gradient(180deg,#140a2a,#2a0f40)"></div>`));
+  el.appendChild($(`<div style="position:absolute;left:-200px;right:-200px;top:1150px;height:900px;background:linear-gradient(180deg,#3a2414,#1e120a);transform:perspective(900px) rotateX(55deg)"></div>`));
+  const glow=$(`<div style="position:absolute;left:90px;top:0;width:900px;height:1500px;background:radial-gradient(closest-side,rgba(255,63,208,.35),transparent);opacity:0"></div>`);el.appendChild(glow);
+  const P7=phone(el,null,0);
+  P7.scr.appendChild($(`<div class="fill" style="background:url(${IMG.colorful}) center/cover;filter:blur(6px) brightness(.55)"></div>`));
+  P7.scr.appendChild($(`<div style="position:absolute;top:130px;left:0;right:0;text-align:center"><div style="font-size:30px;font-weight:500;opacity:.9">יום שישי, 22:00</div><div style="font-size:160px;font-weight:300;line-height:1;direction:ltr">22:00</div></div>`));
+  const n1=notif(P7.scr,'תזכורת · Neon Bloom','מתחיל בעוד שעה. הכרטיס כבר אצלך ✓',470);
+  const n2=notif(P7.scr,'3 חברים שלך הולכים','נועה, איתי ומאיה כבר בפנים',630);
+  const dark=$(`<div class="fill" style="background:#000;z-index:58"></div>`);P7.scr.appendChild(dark);
+  return (lt)=>{
+    const k=eio(P(lt,0,3));P7.ph.style.transform=`translateY(${lerp(240,40,k)}px) scale(${lerp(.82,.98,k)}) perspective(1500px) rotateX(${lerp(28,0,k)}deg)`;
+    const wake=P(lt,.95,1.1);dark.style.opacity=1-wake;glow.style.opacity=wake;
+    const a=eo(P(lt,1.0,1.35));n1.style.opacity=a;n1.style.transform=`translateY(${(1-a)*-60}px) scale(${lerp(.9,1,a)})`;
+    const b=eo(P(lt,1.7,2.05));n2.style.opacity=b;n2.style.transform=`translateY(${(1-b)*-60}px) scale(${lerp(.9,1,b)})`;
+  };
+});
+
+// 8 — scan at the door (28-32)
+scene(28,32,el=>{
+  const bg=photoBg(el,IMG.beams,.55);
+  const P8=phone(el,null,0);
+  P8.scr.appendChild($(`<div class="fill" style="background:linear-gradient(180deg,#2a1158,#1d0b3d)"></div>`));
+  P8.scr.appendChild($(`<div style="position:absolute;top:96px;left:0;right:0;text-align:center"><img src="img/01_3e4371e9.png" style="width:150px"><div style="font-size:36px;font-weight:800;margin-top:8px;direction:ltr">Neon Bloom</div><div class="mut" style="font-size:24px">כרטיס כניסה · 1 אורח · מחסן 9</div></div>`));
+  const qc=$(`<div style="position:absolute;top:350px;left:65px;width:410px;height:410px;background:#fff;border-radius:30px;padding:26px"><canvas width="358" height="358"></canvas></div>`);P8.scr.appendChild(qc);qr(qc.firstChild,99,29);
+  P8.scr.appendChild($(`<div style="position:absolute;top:800px;left:0;right:0;text-align:center;font-size:24px" class="mut">הציגו בכניסה · הבהירות הוגברה</div>`));
+  const laser=$(`<div style="position:absolute;left:56px;width:428px;height:7px;border-radius:4px;background:#ff3fd0;box-shadow:0 0 30px 8px rgba(255,63,208,.8);z-index:44"></div>`);P8.scr.appendChild(laser);
+  const ok=$(`<div class="fill" style="z-index:45;display:grid;place-items:center"><div style="text-align:center"><div style="width:230px;height:230px;margin:0 auto;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:150px;font-weight:800;color:#13a86f">✓</div><div style="font-size:50px;font-weight:800;margin-top:26px;color:#06301f">ברוכים הבאים!</div></div></div>`);P8.scr.appendChild(ok);
+  const corners=$(`<div style="position:absolute;left:214px;top:410px;width:652px;height:652px;z-index:80"></div>`);
+  ['top:0;left:0;border-width:10px 0 0 10px','top:0;right:0;border-width:10px 10px 0 0','bottom:0;left:0;border-width:0 0 10px 10px','bottom:0;right:0;border-width:0 10px 10px 0'].forEach(s=>corners.appendChild($(`<div style="position:absolute;width:110px;height:110px;border:solid rgba(255,255,255,.92);${s};border-radius:18px"></div>`)));
+  el.appendChild(corners);
+  return (lt)=>{
+    const after=P(lt,2.3,3.4);bg.style.filter=`brightness(${.6+.6*after}) saturate(${1+.3*after})`;bg.style.transform=`scale(${lerp(1.15,1.0,eio(P(lt,0,4)))})`;
+    const scanning=lt>.3&&lt<2.0;laser.style.opacity=scanning?1:0;laser.style.top=(360+(Math.sin((lt-.3)*4.2)*.5+.5)*390)+'px';
+    corners.style.opacity=lt<2.05?eo(P(lt,.1,.4)):1-P(lt,2.05,2.3);corners.style.transform=`scale(${lerp(1.1,1,eo(P(lt,.1,.5)))})`;
+    const g=P(lt,2.0,2.15);ok.style.opacity=g;ok.style.background=`rgba(46,229,157,${g*.95})`;ok.firstChild.style.transform=`scale(${g>0?back(P(lt,2.0,2.35)):0})`;
+    const k=eio(after);P8.ph.style.transform=`translateY(${lerp(0,-40,k)}px) scale(${lerp(1,.76,k)}) rotate(${lerp(0,-6,k)}deg)`;
+  };
+});
+
+// 9 — the morning after: rate, upload, share (32-36)
+scene(32,36,el=>{
+  const bg=photoBg(el,IMG.sunset,.45);
+  el.appendChild($(`<div class="fill" style="background:linear-gradient(180deg,transparent 50%,rgba(11,4,24,.75) 72%,rgba(11,4,24,.9))"></div>`));
+  const P9=phone(el,null,0);
+  P9.scr.appendChild($(`<div class="fill" style="background:linear-gradient(180deg,#2a1158,#1d0b3d)"></div>`));
+  P9.scr.appendChild($(`<div style="position:absolute;top:0;left:0;right:0;height:300px;background:url(${IMG.stage}) center/cover"><div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(29,11,61,.1),#2a1158)"></div></div>`));
+  P9.scr.appendChild($(`<div style="position:absolute;top:220px;right:32px;left:32px"><div class="h1" style="font-size:40px">איך היה <span style="direction:ltr;unicode-bidi:isolate">Neon Bloom</span>?</div><div class="mut" style="font-size:23px;margin-top:6px">אתמול · מחסן 9, תל אביב</div></div>`));
+  const stars=$(`<div style="position:absolute;top:350px;left:0;right:0;text-align:center;direction:ltr"></div>`);P9.scr.appendChild(stars);
+  const st=[];for(let i=0;i<5;i++){const s=$(`<svg class="star" viewBox="0 0 24 24"><path d="M12 2l3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6z" fill="#4a2f7a"/></svg>`);stars.appendChild(s);st.push(s)}
+  P9.scr.appendChild($(`<div style="position:absolute;top:470px;right:32px;font-size:26px;font-weight:700">התמונות שלך</div>`));
+  const phs=[IMG.hearts,IMG.crowd,IMG.orange].map((src,i)=>{const d=$(`<div class="ph" style="top:520px;right:${32+i*164}px;background-image:url(${src})"><div class="bar" style="position:absolute;left:0;bottom:0;height:7px;background:#ff3fd0"></div></div>`);P9.scr.appendChild(d);return d});
+  const share=$(`<div class="btn" style="top:710px">שיתוף עם החברים</div>`);P9.scr.appendChild(share);
+  const likes=$(`<div style="position:absolute;top:840px;right:36px;left:36px;font-size:27px;font-weight:700;display:flex;justify-content:space-between"><span><span style="color:#ff3fd0">♥</span> <b class="lk">0</b> לייקים</span><span class="mut">12 תגובות</span></div>`);P9.scr.appendChild(likes);
+  const lk=likes.querySelector('.lk');
+  const hc=document.createElement('canvas');hc.width=W;hc.height=H;hc.className='fill';el.appendChild(hc);
+  const r=rng(77),hs=[];for(let i=0;i<26;i++)hs.push({x:330+r()*420,t0:2.3+r()*1.5,s:40+r()*50,w:r()*6,c:r()<.6?'#ff3fd0':'#ff7ae0'});
+  return (lt)=>{
+    const k=eio(P(lt,0,4));P9.ph.style.transform=`scale(${lerp(.94,1,k)})`;bg.style.transform=`scale(${lerp(1.12,1,k)})`;
+    st.forEach((s,i)=>{const tt=.6+i*.4,kk=P(lt,tt,tt+.25);s.firstChild.setAttribute('fill',kk>0?'#ffb340':'#4a2f7a');s.style.transform=`scale(${kk>0?back(kk):1})`;s.style.filter=kk>0?'drop-shadow(0 0 12px rgba(255,179,64,.85))':''});
+    phs.forEach((p,i)=>{const kk=eo(P(lt,2.4+i*.2,2.7+i*.2));p.style.opacity=kk;p.style.transform=`scale(${lerp(.6,1,back(kk))})`;p.querySelector('.bar').style.width=(cl((lt-2.5-i*.2)/.6)*100)+'%';p.querySelector('.bar').style.opacity=lt>3.4+i*.2?0:1});
+    const sk=P(lt,3.2,3.35);share.style.transform=`scale(${1-.06*Math.sin(sk*Math.PI)})`;
+    lk.textContent=Math.round(lerp(0,248,eio(P(lt,3.0,3.9))));
+    const g=hc.getContext('2d');g.clearRect(0,0,W,H);g.textAlign='center';
+    for(const h of hs){const dt=lt-h.t0;if(dt<0||dt>1.6)continue;g.globalAlpha=cl(1-dt/1.6);g.fillStyle=h.c;g.font=`${h.s}px Rubik,sans-serif`;g.fillText('♥',h.x+Math.sin(dt*4+h.w)*30,1000-dt*600)}
+    g.globalAlpha=1;
+  };
+});
+
+// 10 — finale: fireworks + the real logo (36-40)
+scene(36,40,el=>{
+  const bg=photoBg(el,IMG.purple,.6);
+  const fw=document.createElement('canvas');fw.width=W;fw.height=H;fw.className='fill';el.appendChild(fw);
+  el.appendChild($(`<div class="fill" style="background:radial-gradient(60% 40% at 50% 40%,rgba(11,4,24,.0),rgba(11,4,24,.55))"></div>`));
+  const card=$(`<div style="position:absolute;left:0;right:0;top:300px;text-align:center;direction:rtl">
+     <img class="big" src="../wawg2/logo_card.png" style="width:640px;border-radius:96px;box-shadow:0 0 90px rgba(255,63,208,.55),0 0 160px rgba(51,214,255,.25)">
+     <div class="l1" style="font-size:84px;font-weight:800;margin-top:34px;text-shadow:0 6px 26px rgba(124,58,237,.9)">לאן הולכים? <span style="color:var(--pink);text-shadow:0 0 22px rgba(255,63,208,.9),0 0 50px rgba(255,63,208,.6)">אני בפנים</span></div>
+     <div class="l3" style="display:inline-flex;gap:18px;align-items:center;margin-top:40px;padding:20px 54px;border-radius:60px;background:linear-gradient(90deg,#ff4fd8,#b44bff);font-size:56px;font-weight:700;box-shadow:0 0 60px rgba(255,63,208,.6)"><span style="direction:ltr">wawg.live</span><span>←</span></div></div>`);el.appendChild(card);
+  const big=card.querySelector('.big'),l1=card.querySelector('.l1'),l3=card.querySelector('.l3');
+  const R=rng(123),bursts=[];
+  const BT=[[.25,300,520],[.6,800,420],[1.5,540,300],[1.62,200,330],[1.75,880,350],[2.2,240,1150],[2.45,840,1100],[2.9,540,220],[3.2,170,700],[3.4,910,700]];
+  BT.forEach(([t0,x,y],i)=>{const col=['255,63,208','162,75,255','255,179,64','51,214,255','255,122,224'][i%5];const ps=[];for(let j=0;j<90;j++){const a=R()*Math.PI*2,s=380+R()*420;ps.push([Math.cos(a)*s,Math.sin(a)*s])}bursts.push({t0,x,y,col,ps})});
+  return (lt)=>{
+    bg.style.transform=`scale(${lerp(1.2,1.0,eio(P(lt,0,1.5)))})`;bg.style.filter=`brightness(${lt<1.5?1:.65})`;
+    const g=fw.getContext('2d');g.clearRect(0,0,W,H);g.globalCompositeOperation='lighter';
+    for(const b of bursts){const d=lt-b.t0;if(d<-.35||d>1.8)continue;
+      if(d<0){const k=1+d/.35;g.fillStyle=`rgba(${b.col},.9)`;g.beginPath();g.arc(b.x,H-200-(H-200-b.y)*k,6,0,7);g.fill();continue}
+      const a=cl(1-d/1.8);for(const [vx,vy] of b.ps){const f=(1-Math.exp(-2.2*d))/2.2;const x=b.x+vx*f,y=b.y+vy*f+160*d*d;const d2=Math.max(0,d-.08),f2=(1-Math.exp(-2.2*d2))/2.2;
+        g.strokeStyle=`rgba(${b.col},${a})`;g.lineWidth=4;g.beginPath();g.moveTo(b.x+vx*f2,b.y+vy*f2+160*d2*d2);g.lineTo(x,y);g.stroke()}}
+    g.globalCompositeOperation='source-over';
+    const bk=P(lt,1.5,1.9);big.style.opacity=bk>0?1:0;big.style.transform=`scale(${bk>0?lerp(2.0,1,back(bk)):0})`;
+    const a1=eo(P(lt,1.9,2.2)),a3=eo(P(lt,2.35,2.65));
+    l1.style.opacity=a1;l1.style.transform=`translateY(${(1-a1)*28}px)`;
+    l3.style.opacity=a3;l3.style.transform=`translateY(${(1-a3)*28}px) scale(${1+.03*Math.sin(Math.max(0,lt-2.65)*6)})`;
+  };
+});
+
+const wm=document.getElementById('wm'),flash=document.getElementById('flash');
+async function R2(t,t4){
+  pending.length=0;
+  for(let i=0;i<S.length;i++){const s=S[i];const vis=t>=s.a-.001&&t<s.b+.15;
+    if(!vis){s.el.style.display='none';continue}
+    s.el.style.display='block';s.el.style.zIndex=10+i;s.el.style.opacity=i===0?1:eo(P(t,s.a,s.a+.15));
+    s.upd(t-s.a,t)}
+  updSub(t4);
+  wm.style.opacity=(t>=36?1-P(t,36,36.3):1)*.9;
+  const f=Math.max((t>=16?(1-P(t,16,16.35))*.85:0),(t>=37.5?(1-P(t,37.5,37.9))*.6:0),(t>=30?(1-P(t,30,30.2))*.25:0));
+  flash.style.opacity=f;flash.style.background=t>=29&&t<31?'#2ee59d':'#fff';
+  await Promise.all(pending);
+};
+// ad4: group-chat scenes ("מה עושים הערב?") over the ad2 timeline
+const CHAT_IN=[[0,13.5],[21.5,26.9]];
+const chatEl=$(`<div class="fill" style="z-index:205;display:none;background:#0b0418">
+  <div class="cbg photo-bg" style="filter:blur(16px) brightness(.45) saturate(1.2)"></div>
+  <div class="fill" style="background:radial-gradient(80% 60% at 50% 40%,rgba(162,75,255,.25),rgba(11,4,24,.7))"></div>
+  <div class="phone" style="top:40px;transform-origin:50% 0"><div class="scr" style="background:linear-gradient(180deg,#1b0c38,#120726)">
+    <div class="island"></div>
+    <div style="position:absolute;top:70px;left:0;right:0;height:96px;display:flex;align-items:center;gap:14px;padding:0 26px;background:rgba(36,18,72,.95);border-bottom:1px solid rgba(255,255,255,.08);z-index:20">
+      <div style="width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#ff4fd8,#a24bff);display:grid;place-items:center;font-size:30px">🎉</div>
+      <div><div style="font-size:28px;font-weight:700">הערב יוצאים</div><div style="font-size:20px;color:#c4b3e6">נועה, איתי, מאיה</div></div></div>
+    <div class="msgs" style="position:absolute;top:170px;bottom:100px;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-end;gap:14px;padding:0 20px;overflow:hidden"></div>
+    <div style="position:absolute;bottom:22px;left:20px;right:20px;height:64px;border-radius:32px;background:#2a1550;display:flex;align-items:center;padding:0 24px;color:#8f7bb8;font-size:22px">הודעה</div>
+  </div></div></div>`);
+stage.appendChild(chatEl);
+const cbg=chatEl.querySelector('.cbg'),msgs=chatEl.querySelector('.msgs'),cphone=chatEl.querySelector('.phone');
+const WHO={'נועה':['#ff7ae0',1],'איתי':['#33d6ff',0],'מאיה':['#ffb340',0]};
+function wave(seed){const r=rng(seed);let s='';for(let i=0;i<26;i++){const h=8+r()*30;s+=`<i style="display:inline-block;width:5px;height:${h}px;margin:0 2px;border-radius:3px;background:currentColor;vertical-align:middle"></i>`}return s}
+const M=[];
+function msg(t0,who,html,{voice=null,typing=true}={}){
+  const [col,mine]=WHO[who];
+  const el=$(`<div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};display:none">
+    <div class="bub" style="max-width:400px;padding:14px 18px;border-radius:24px;${mine?'border-bottom-left-radius:6px;background:linear-gradient(135deg,#d93fd0,#8a3cff)':'border-bottom-right-radius:6px;background:#2d1858'};box-shadow:0 6px 18px rgba(0,0,0,.3)">
+      ${mine?'':`<div style="font-size:21px;font-weight:700;color:${col};margin-bottom:4px">${who}</div>`}${html}</div></div>`);
+  msgs.appendChild(el);const tp=typing&&!mine?$(`<div style="align-self:flex-start;display:none;padding:14px 22px;border-radius:24px;background:#2d1858;font-size:30px;letter-spacing:4px;color:#c4b3e6">•••</div>`):null;
+  if(tp)msgs.insertBefore(tp,el);
+  M.push({t0,el,tp,voice});return el}
+function voiceNote(seed,dur,text){return `<div class="vn" style="display:flex;align-items:center;gap:12px;direction:ltr"><span style="font-size:26px">▶</span><span class="wv" style="position:relative;color:rgba(255,255,255,.35);white-space:nowrap">${wave(seed)}<span class="wvp" style="position:absolute;inset:0;color:#fff;overflow:hidden;white-space:nowrap;width:0">${wave(seed)}</span></span><span style="font-size:18px;opacity:.8">0:0${Math.ceil(dur)}</span></div><div style="font-size:26px;line-height:1.35;margin-top:8px;opacity:.95">${text}</div>`}
+// voice lines: [start, duration] match vo/vo_chat.wav
+msg(0.3,'נועה',voiceNote(1,3.4,'חבר׳ה, מה עושים הערב? אני מתה לצאת.'),{voice:[0.4,3.39]});
+msg(3.9,'איתי',voiceNote(2,4.4,'אין כלום. בדקתי בכל מקום, הכול או מלא או מת.'),{voice:[4.0,4.37]});
+msg(8.5,'מאיה',voiceNote(3,2.4,'אנחנו רוצים מסיבה, לא עוד ערב על הספה!'),{voice:[8.6,2.36]});
+msg(11.1,'נועה',voiceNote(4,2.2,'רגע... תורידו WAWG'),{voice:[11.2,2.15]});
+const link=msg(12.1,'נועה',`<div style="width:340px;border-radius:16px;overflow:hidden;background:#140a2a"><img src="logo_card.png" style="width:340px;height:200px;object-fit:cover;display:block"><div style="padding:10px 14px"><div style="font-size:22px;font-weight:700">WAWG · לאן הולכים?</div><div style="font-size:18px;color:#c4b3e6;direction:ltr;text-align:right">wawg.live</div></div></div>`,{typing:false});
+const ctap=$(`<div class="tap" style="z-index:70"></div>`);cphone.querySelector('.scr').appendChild(ctap);
+msg(21.6,'איתי',voiceNote(5,3.9,'וואו, Neon Bloom הערב! לקחתי כרטיס.')+`<div style="margin-top:10px;width:330px;border-radius:16px;overflow:hidden;background:#fff;color:#1d0b3d;direction:rtl"><div style="height:110px;background:url(img/09_dbd71b1f.webp) center/cover"></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px"><div><b style="font-size:20px;direction:ltr;display:block;text-align:right">Neon Bloom</b><span style="font-size:16px;color:#6b5a90">כרטיס כניסה · הערב 23:00</span></div><canvas class="mq" width="70" height="70"></canvas></div></div>`,{voice:[21.7,3.83]});
+qr(msgs.querySelector('.mq'),99,21);
+msg(25.55,'מאיה',`<div style="font-size:30px;font-weight:700">אני בפנים! 🙌</div>`,{voice:[25.6,.68],typing:false});
+msg(26.25,'נועה',`<div style="font-size:30px;font-weight:700">גם אני! 💃</div>`,{voice:[26.3,.5],typing:false});
+function chatAt(t){
+  const on=CHAT_IN.some(([a,b])=>t>=a&&t<b);chatEl.style.display=on?'block':'none';if(!on)return;
+  const fi=Math.min(299,Math.floor((t<13.5?t:2.4)*30))+1;cbg.style.backgroundImage=`url(clip/${String(fi).padStart(4,'0')}.jpg)`;
+  const seg2=t>=21.5;cphone.style.transform=`scale(${1.3*(seg2?lerp(1.03,1,eo(P(t,21.5,22))):lerp(.98,1.01,P(t,0,13.5)))})`;
+  chatEl.style.opacity=seg2?eo(P(t,21.5,21.7)):1;
+  for(const m of M){const vis=t>=m.t0;m.el.style.display=vis?'flex':'none';
+    if(m.tp)m.tp.style.display=(t>=m.t0-.7&&t<m.t0)?'block':'none';
+    if(vis){const k=eo(P(t,m.t0,m.t0+.25));m.el.style.opacity=k;m.el.style.transform=`translateY(${(1-k)*30}px) scale(${lerp(.92,1,k)})`}
+    if(m.voice){const p=m.el.querySelector('.wvp');if(p)p.style.width=(cl((t-m.voice[0])/m.voice[1])*100)+'%'}}
+  const r=link.querySelector('img').getBoundingClientRect(),s=cphone.querySelector('.scr').getBoundingClientRect(),sc=s.width/540;
+  ctap.style.left=((r.left+r.width/2-s.left)/sc)+'px';ctap.style.top=((r.top+r.height/2-s.top)/sc)+'px';tapAnim(ctap,t,13.15);
+}
+
+// app montage between the chats: [from,to,ad2 time]
+const MAP=[[13.5,17.5,4],[17.5,19.0,8.6],[19.0,20.2,18.2],[20.2,21.5,29.4],[21.5,21.8,30.7],[26.9,30,36.9]];
+function map(t){for(const [a,b,s] of MAP)if(t>=a&&t<b)return s+(t-a);return 39.99}
+window.R=async function(t){
+  chatAt(t);
+  const inChat=CHAT_IN.some(([a,b])=>t>=a&&t<b);
+  if(inChat&&!(t>=21.5&&t<21.7)){subEl.style.opacity=0;wm.style.opacity=.9;flash.style.opacity=0;await Promise.all([...chatEl.querySelectorAll('img')].map(i=>i.decode().catch(()=>{})));return}
+  await R2(map(t),t);
+  if(t>=13.5&&t<13.85){flash.style.background='#fff';flash.style.opacity=(1-P(t,13.5,13.85))*.85}
+};
+const preload=['clip/0001.jpg','clip/0072.jpg',...Object.values(IMG),'img/03_e587df33.webp','logo_card.png',LOGO].map(src=>{const i=new Image();i.src=src;return i.decode().catch(()=>{})});
+window.READY=Promise.all([document.fonts.ready,...preload]).then(()=>R(0)).then(()=>true);
+</script></body></html>

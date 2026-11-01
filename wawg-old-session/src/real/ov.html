@@ -1,0 +1,44 @@
+<!doctype html><html lang="he"><head><meta charset="utf-8"><link rel="stylesheet" href="fonts.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;background:transparent;overflow:hidden;font-family:Rubik,sans-serif;color:#fff}
+.sub{position:absolute;left:50px;right:50px;bottom:250px;text-align:center;direction:rtl;font-weight:600;font-size:52px;line-height:1.28;text-shadow:0 2px 3px rgba(0,0,0,.55),0 0 28px rgba(0,0,0,.45);opacity:0}
+.sub em{font-style:normal;color:#ff4fd8}
+#stamp{position:absolute;top:150px;right:80px;direction:rtl;font-weight:500;font-size:40px;letter-spacing:.5px;opacity:0;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+#stamp i{display:inline-block;width:14px;height:14px;border-radius:50%;background:#ff3b3b;margin-left:14px;vertical-align:middle}
+#q{position:absolute;left:0;right:0;top:820px;text-align:center;direction:rtl;font-weight:800;font-size:150px;letter-spacing:-2px;opacity:0;text-shadow:0 6px 40px rgba(0,0,0,.55)}
+#q span{color:#ff4fd8}
+#dark{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,rgba(8,3,20,.55),rgba(8,3,20,.85));opacity:0}
+#logo{position:absolute;left:50%;top:560px;width:420px;margin-left:-210px;opacity:0}
+#logo img{width:420px;border-radius:64px;box-shadow:0 0 80px rgba(255,63,208,.45)}
+#slogan{position:absolute;left:0;right:0;top:1060px;text-align:center;direction:rtl;font-weight:800;font-size:76px;line-height:1.15;opacity:0}
+#slogan span{color:#ff4fd8}
+#url{position:absolute;left:50%;top:1290px;transform:translateX(-50%);padding:14px 40px;border-radius:50px;border:2px solid rgba(255,255,255,.75);font-weight:600;font-size:44px;direction:ltr;opacity:0}
+#black{position:absolute;inset:0;background:#000;opacity:0}
+</style></head><body>
+<div id="stamp"><i></i>חמישי · 21:40</div>
+<div id="q">לאן הולכים<span>?</span></div>
+<div class="sub" data-a="0.30" data-b="3.20">חמישי בערב. כולם שואלים...</div>
+<div class="sub" data-a="5.55" data-b="10.05">פותחים WAWG.<br>כל מה שקורה <em>סביבכם</em> הערב, במקום אחד.</div>
+<div class="sub" data-a="11.20" data-b="14.25">בוחרים, קונים כרטיס, ויוצאים.</div>
+<div class="sub" data-a="23.10" data-b="26.30">ומחר? שוב שואלים <em>לאן הולכים</em>.</div>
+<div id="dark"></div>
+<div id="logo"><img src="logo_card.png"></div>
+<div id="slogan">לאן הולכים?<br><span>אני בפנים.</span></div>
+<div id="url">wawg.live</div>
+<div id="black"></div>
+<script>
+const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),P=(t,a,b)=>cl((t-a)/(b-a)),eo=x=>1-Math.pow(1-x,3);
+const $=id=>document.getElementById(id);const subs=[...document.querySelectorAll('.sub')];
+window.R=async function(t){
+  subs.forEach(s=>{const a=+s.dataset.a,b=+s.dataset.b;const k=Math.min(eo(P(t,a,a+.22)),1-P(t,b-.18,b));s.style.opacity=k;s.style.transform=`translateY(${(1-eo(P(t,a,a+.3)))*14}px)`});
+  const st=Math.min(P(t,.15,.45),1-P(t,3.0,3.28));$('stamp').style.opacity=st;
+  const q=Math.min(eo(P(t,3.36,3.62)),1-P(t,5.05,5.24));$('q').style.opacity=q;$('q').style.transform=`scale(${1.06-.06*eo(P(t,3.36,5.2))})`;
+  $('dark').style.opacity=eo(P(t,26.7,27.4));
+  const l=eo(P(t,27.0,27.7));$('logo').style.opacity=l;$('logo').style.transform=`translateY(${(1-l)*30}px) scale(${.94+.06*l})`;
+  const s2=eo(P(t,27.9,28.5));$('slogan').style.opacity=s2;$('slogan').style.transform=`translateY(${(1-s2)*24}px)`;
+  const u=eo(P(t,28.9,29.4));$('url').style.opacity=u;
+  $('black').style.opacity=P(t,31.3,32.0);
+};
+window.READY=Promise.all([document.fonts.ready,new Promise(r=>{const i=document.querySelector('#logo img');i.complete?r():i.onload=r})]).then(()=>R(0)).then(()=>true);
+</script></body></html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="he"><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#111;font-family:Rubik,sans-serif;color:#fff}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden}
+.layer{position:absolute;inset:0;display:none;overflow:hidden}
+.full{position:absolute;inset:0;width:1080px;height:1920px;object-fit:cover}
+.kick{position:absolute;top:150px;right:70px;display:flex;flex-direction:column;align-items:flex-end;gap:14px;direction:rtl}
+.kick .q{background:#111;color:#fff;font-weight:800;font-size:46px;padding:12px 26px;border-radius:14px;transform:rotate(2deg)}
+.kick .n{font-weight:700;font-size:40px;text-shadow:0 3px 14px rgba(0,0,0,.55)}
+.ans{position:absolute;left:0;right:0;top:1030px;display:flex;justify-content:center}
+.ans span{display:inline-block;white-space:nowrap;font-weight:900;font-size:190px;line-height:1;padding:26px 54px 34px;border-radius:26px;direction:rtl;box-shadow:0 24px 0 rgba(0,0,0,.18)}
+.card{position:absolute;left:90px;right:90px;top:1420px;height:250px;background:#fff;color:#111;border-radius:34px;display:flex;align-items:center;gap:26px;padding:22px;direction:rtl;box-shadow:0 30px 70px rgba(0,0,0,.35)}
+.card .im{flex:none;width:206px;height:206px;border-radius:22px;background-size:cover;background-position:center}
+.card b{display:block;font-size:44px;font-weight:800;direction:ltr;text-align:right}
+.card small{display:block;font-size:30px;color:#555;margin-top:4px}
+.card .pr{display:inline-block;margin-top:12px;font-size:28px;font-weight:700;padding:6px 18px;border-radius:30px;background:#111;color:#fff}
+.card .tag{position:absolute;top:-26px;left:30px;background:linear-gradient(90deg,#ff4fd8,#b44bff);color:#fff;font-weight:800;font-size:26px;padding:8px 20px;border-radius:30px;direction:ltr}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:50}
+</style></head>
+<body><div id="stage"><div id="flash"></div></div>
+<script>
+"use strict";
+const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),P=(t,a,b)=>cl((t-a)/(b-a)),eo=x=>1-Math.pow(1-x,3),lerp=(a,b,x)=>a+(b-a)*x;
+const back=x=>{const c1=2.2,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+const $=h=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild};
+const stage=document.getElementById('stage'),flash=document.getElementById('flash');
+const PEOPLE=[
+ {img:'people/p1.png',name:'רותי, 72',ans:"ג'אז.",sbg:'#ffd23f',sfg:'#111',ev:'Blue Room Jazz',place:'החדר התחתון · תל אביב · 21:00',price:'60 ₪',pic:'img/30_52398dc6.webp'},
+ {img:'people/p2.png',name:'נועם, 22',ans:'טכנו.',sbg:'#111',sfg:'#c8ff1e',ev:'Deep District',place:'סלון לבנט · תל אביב · 23:30',price:'120 ₪',pic:'img/04_12cf42aa.webp'},
+ {img:'people/p3.png',name:'שירן ואבי, 44',ans:'שוק לילה.',fs:165,sbg:'#1f3cff',sfg:'#fff',ev:'Jaffa Night Market',place:'מזח 4 · תל אביב · 19:00',price:'חינם',pic:'img/13_ad827454.webp'},
+ {img:'people/p4.png',name:'מוטי, 34',ans:'שקיעה בים.',fs:150,sbg:'#00b8a0',sfg:'#111',ev:'Sunset Sessions',place:'גורדון סנדס · תל אביב · 17:30',price:'חינם',pic:'img/33_4165e4d5.webp'},
+ {img:'people/p5.png',name:"החבר'ות, 25",ans:'פופ!',sbg:'#ff2e88',sfg:'#fff',ev:'Confetti',place:'חצר 12 · ירושלים · 22:00',price:'90 ₪',pic:'img/09_dbd71b1f.webp'},
+ {img:'people/p6.png',name:'דורון, 52',ans:'יין על הגג.',fs:150,sbg:'#ff8a00',sfg:'#111',ev:'Rooftop Wine Sessions',place:'גג השוק · ירושלים · 18:00',price:'120 ₪',pic:'img/25_74c9dabc.webp'},
+];
+const T0=2,DUR=4;
+// intro: the question, word by word on the beat
+const intro=$(`<div class="layer" style="background:#ff2e88;display:block"><div style="position:absolute;left:0;right:0;top:700px;text-align:center;direction:rtl;color:#111;font-weight:900;font-size:230px;line-height:1.02">
+  <div class="w1">לאן</div><div class="w2">הולכים<span class="w3">?</span></div></div></div>`);
+stage.appendChild(intro);
+const w1=intro.querySelector('.w1'),w2=intro.querySelector('.w2'),w3=intro.querySelector('.w3');
+// people
+const L=PEOPLE.map(p=>{const el=$(`<div class="layer">
+  <img class="full ph" src="${p.img}">
+  <div class="full" style="background:linear-gradient(180deg,rgba(0,0,0,.28),rgba(0,0,0,0) 22%,rgba(0,0,0,0) 62%,rgba(0,0,0,.35))"></div>
+  <div class="kick"><div class="q">לאן הולכים?</div><div class="n">${p.name}</div></div>
+  <div class="ans"><span style="background:${p.sbg};color:${p.sfg};${p.fs?`font-size:${p.fs}px`:''}">${p.ans}</span></div>
+  <div class="card"><div class="im" style="background-image:url(${p.pic})"></div><div><b>${p.ev}</b><small>${p.place}</small><span class="pr">${p.price}</span></div><div class="tag">WAWG</div></div>
+</div>`);stage.insertBefore(el,flash);return {el,ph:el.querySelector('.ph'),kick:el.querySelector('.kick'),ans:el.querySelector('.ans span'),card:el.querySelector('.card')}});
+// outro: collage, line, logo
+const outro=$(`<div class="layer" style="background:#111"><div class="grid" style="position:absolute;left:40px;right:40px;top:120px;display:grid;grid-template-columns:repeat(2,1fr);gap:20px">
+  ${PEOPLE.map(p=>`<div class="g" style="height:540px;border-radius:24px;background:url(${p.img}) center 18%/cover"></div>`).join('')}</div>
+  <div class="line" style="position:absolute;left:0;right:0;top:640px;text-align:center;direction:rtl;font-weight:900;font-size:150px;line-height:1.05"><div class="a1">לכל אחד</div><div class="a2">יש <span style="color:#ff2e88">לאן.</span></div></div>
+  <div class="lg" style="position:absolute;left:50%;top:1020px;width:440px;margin-left:-220px;text-align:center"><img src="logo_card.png" style="width:440px;border-radius:70px;box-shadow:0 0 90px rgba(255,63,208,.5)">
+  <div class="url" style="display:inline-block;margin-top:34px;padding:16px 44px;border-radius:50px;background:#fff;color:#111;font-size:52px;font-weight:800;direction:ltr">wawg.live</div></div></div>`);
+stage.insertBefore(outro,flash);
+const grid=outro.querySelector('.grid'),gs=[...outro.querySelectorAll('.g')],line=outro.querySelector('.line'),a1=outro.querySelector('.a1'),a2=outro.querySelector('.a2'),lg=outro.querySelector('.lg'),url=outro.querySelector('.url');
+const pending=[];
+window.R=async function(t){
+  // intro 0-2
+  intro.style.display=t<2?'block':'none';
+  if(t<2){const pop=(el,t0)=>{const k=P(t,t0,t0+.25);el.style.opacity=k>0?1:0;el.style.transform=`scale(${k>0?back(k):.3})`;el.style.display='inline-block'};
+    w1.style.display='block';w2.style.display='block';pop(w1,.05);pop(w2,.55);pop(w3,1.05);
+    const sh=t>1.5?Math.sin(t*90)*6*(1-P(t,1.5,1.9)):0;intro.firstChild.style.transform=`translate(${sh}px,${-sh/2}px)`}
+  // people 2-26
+  L.forEach((o,i)=>{const s=T0+i*DUR,lt=t-s;const on=lt>=0&&lt<DUR;o.el.style.display=on?'block':'none';if(!on)return;
+    const z=eo(P(lt,0,.35));const beat=Math.pow(1-((lt)%.5)/.5,4)*.006;
+    o.ph.style.transform=`scale(${lerp(1.14,1.0,z)+lt*.012+beat})`;
+    const k=eo(P(lt,.12,.4));o.kick.style.opacity=k;o.kick.style.transform=`translateX(${(1-k)*60}px)`;
+    const a=P(lt,.5,.78);o.ans.style.opacity=a>0?1:0;o.ans.style.transform=`rotate(${i%2?4:-5}deg) scale(${a>0?lerp(1.7,1,back(a)):0})`;
+    const c=eo(P(lt,1.9,2.3));o.card.style.transform=`translateY(${(1-c)*520}px) rotate(${(1-c)*-4}deg)`;
+    const out=P(lt,3.85,4);o.el.style.opacity=1;
+  });
+  // outro 26-32
+  const ot=t-26;outro.style.display=ot>=0?'block':'none';
+  if(ot>=0){gs.forEach((g,i)=>{const k=P(ot,i*.13,i*.13+.2);g.style.opacity=k>0?1:0;g.style.transform=`scale(${k>0?back(k):.5}) rotate(${(i%2?2:-2)*(1-eo(k))}deg)`});
+    const gk=eo(P(ot,1.45,1.8));grid.style.opacity=1-gk;grid.style.transform=`scale(${1-gk*.15})`;
+    const b1=P(ot,1.7,1.95),b2=P(ot,2.1,2.35);a1.style.opacity=b1>0?1:0;a1.style.transform=`scale(${b1>0?back(b1):.5})`;a2.style.opacity=b2>0?1:0;a2.style.transform=`scale(${b2>0?back(b2):.5})`;
+    const up=eo(P(ot,3.0,3.4));line.style.transform=`translateY(${-up*360}px) scale(${1-up*.2})`;
+    const l=P(ot,3.05,3.4);lg.style.opacity=l>0?1:0;lg.style.transform=`translateY(${-up*200}px) scale(${l>0?back(l):.3})`;
+    const u=eo(P(ot,3.6,3.9));url.style.opacity=u;url.style.transform=`translateY(${(1-u)*30}px)`;}
+  // white flash on each hard cut
+  let f=0;for(let i=0;i<=6;i++){const s=T0+i*DUR;if(t>=s&&t<s+.1)f=.55*(1-(t-s)/.1)}
+  flash.style.opacity=f;
+  await Promise.all([...stage.querySelectorAll('img')].filter(i=>i.offsetParent).map(i=>i.decode().catch(()=>{})));
+};
+const preload=[...PEOPLE.flatMap(p=>[p.img,p.pic]),'logo_card.png'].map(s=>{const i=new Image();i.src=s;return i.decode().catch(()=>{})});
+window.READY=Promise.all([document.fonts.ready,...preload]).then(()=>R(0)).then(()=>true);
+</script></body></html>

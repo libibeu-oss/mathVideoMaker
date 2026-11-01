@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000;font-family:Rubik,sans-serif;color:#fff}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:#000}
+.layer{position:absolute;inset:0;display:none;overflow:hidden}
+.big{font-weight:900;letter-spacing:-2px;line-height:.95}
+.pink{color:#ff2e88}.lime{color:#c8ff1e}
+.day{display:grid;grid-template-columns:170px 1fr;align-items:center;gap:24px;padding:40px 36px;border-radius:28px;background:#141418;margin-bottom:30px}
+.day b{font-size:56px;font-weight:900;color:#c8ff1e;letter-spacing:2px}
+.day span{font-size:48px;font-weight:700}
+.day small{display:block;font-size:32px;color:#8a8a96;font-weight:500}
+.bub{position:absolute;padding:20px 30px;border-radius:34px;background:#fff;color:#111;font-size:36px;font-weight:700;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.phone{position:absolute;left:254px;top:330px;width:572px;height:1201px;border-radius:86px;background:#06020e;padding:16px;box-shadow:0 0 0 3px #333,0 0 140px rgba(200,255,30,.25)}
+.scr{position:relative;width:540px;height:1169px;border-radius:70px;overflow:hidden;background:#1d0b3d}
+.scr img.app{position:absolute;inset:0;width:540px;height:1169px}
+.tap{position:absolute;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;background:rgba(255,255,255,.35);border:4px solid rgba(255,255,255,.85);opacity:0;z-index:70}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:50}
+</style></head>
+<body><div id="stage"><div id="flash"></div></div>
+<script>
+"use strict";
+// ===== EDITABLE CONTENT =====
+const CFG={
+  artist:'DJADJA', artistPhoto:'img/03_e587df33.webp',
+  week:[['MON',"Moshe's Bar",'Tel Aviv'],['WED',"David's Rooftop",'Jaffa'],['FRI','???','secret location'],['SAT','Beach Club','Rhodes 🇬🇷']],
+  fans:['where is he playing tonight??','missed him AGAIN 😭','next gig??','is it this friday or next?','anyone got the location?','@djadja where are you'],
+  stopLine:'Now they<br>don’t have <span class="lime">to.</span>',
+  near:{dist:'400m',event:'Neon Bloom',info:'Warehouse 9 · Tonight 23:00'},
+  endLine:'Play anywhere.<br>Be <span class="lime">found</span><br>everywhere.',
+  cta:'For artists · wawg.live',
+};
+// ============================
+const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),P=(t,a,b)=>cl((t-a)/(b-a)),eo=x=>1-Math.pow(1-x,3),lerp=(a,b,x)=>a+(b-a)*x;
+const eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,back=x=>{const c1=2,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+function rng(s){return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+const $=h=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild};
+const stage=document.getElementById('stage'),flash=document.getElementById('flash');
+const lay=()=>{const l=$('<div class="layer"></div>');stage.insertBefore(l,flash);return l};
+const tapAnim=(el,t,t0)=>{const k=P(t,t0-.12,t0+.35);el.style.opacity=(t<t0-.12||t>t0+.35)?0:(k<.25?k*4:1-(k-.25)/.75)*.9;el.style.transform=`scale(${lerp(1.25,.75,eo(cl(k*2)))})`};
+// --- A: the week (0-5)
+const A=lay();
+A.appendChild($(`<div style="position:absolute;left:60px;right:60px;top:120px;display:flex;align-items:center;gap:30px"><div style="width:200px;height:200px;border-radius:50%;background:url(${CFG.artistPhoto}) center/cover;border:6px solid #c8ff1e"></div><div><div style="font-size:30px;letter-spacing:6px;color:#8a8a96;font-weight:700">THIS WEEK</div><div class="big" style="font-size:110px">${CFG.artist}</div></div></div>`));
+const wk=$(`<div style="position:absolute;left:60px;right:60px;top:420px"></div>`);A.appendChild(wk);
+const days=CFG.week.map(d=>{const el=$(`<div class="day"><b>${d[0]}</b><div><span>${d[1]}</span><small>📍 ${d[2]}</small></div></div>`);wk.appendChild(el);return el});
+const lost=$(`<div class="big" style="position:absolute;left:60px;right:60px;top:1480px;font-size:120px">Where <span class="lime">next?</span></div>`);A.appendChild(lost);
+// --- B: fans (5-8)
+const B=lay();
+B.appendChild($(`<div style="position:absolute;inset:-40px;background:url(${CFG.artistPhoto}) center/cover;filter:blur(14px) brightness(.45)"></div>`));
+const rr=rng(3);const bubs=CFG.fans.map((f,i)=>{const el=$(`<div class="bub">${f}</div>`);el.style.left=(40+rr()*380)+'px';el.style.top=(260+i*230)+'px';B.appendChild(el);return {el,t0:5.1+i*.38,rot:(rr()-.5)*10}});
+// --- C: stop (8-9)
+const C=lay();C.appendChild($(`<div class="big" style="position:absolute;left:70px;right:70px;top:760px;font-size:150px">${CFG.stopLine}</div>`));
+// --- D: follow on the real artist page (9-14)
+const D=lay();
+D.appendChild($(`<div class="big" style="position:absolute;left:0;right:0;top:110px;text-align:center;font-size:100px">Follow <span class="lime">once.</span></div>`));
+const ph=$(`<div class="phone"><div class="scr"><img class="app"></div></div>`);D.appendChild(ph);
+const scr=ph.querySelector('.scr'),app=ph.querySelector('img.app'),K=540/390;
+const pill=$(`<div style="position:absolute;left:${167.19*K}px;top:${540.6*K}px;width:${117.64*K}px;height:${52*K}px;border-radius:${26*K}px;background:#c8ff1e;color:#111;display:grid;place-items:center;font-size:27px;font-weight:800;opacity:0;z-index:20">✓ Following</div>`);scr.appendChild(pill);
+const tp=$(`<div class="tap" style="left:${(167.19+58.8)*K}px;top:${(540.6+26)*K}px"></div>`);scr.appendChild(tp);
+// --- E: near-me radar (14-22)
+const E=lay();
+E.appendChild($(`<div style="position:absolute;left:0;right:0;top:110px;text-align:center"><div style="font-size:34px;letter-spacing:8px;color:#8a8a96;font-weight:700">📍 NEAR ME</div><div class="big" style="font-size:96px;margin-top:14px">Play <span class="lime">anywhere.</span></div></div>`));
+const cv=document.createElement('canvas');cv.width=1080;cv.height=1920;cv.style.cssText='position:absolute;inset:0';E.appendChild(cv);
+const pin=$(`<div style="position:absolute;left:640px;top:760px;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%;background:url(${CFG.artistPhoto}) center/cover;border:8px solid #c8ff1e;box-shadow:0 0 60px rgba(200,255,30,.7);opacity:0"></div>`);E.appendChild(pin);
+const ncard=$(`<div style="position:absolute;left:70px;right:70px;top:1340px;padding:30px 34px;border-radius:32px;background:#141418;border:2px solid #c8ff1e"><div style="display:flex;justify-content:space-between;align-items:center"><div class="big" style="font-size:64px">${CFG.artist}</div><div style="padding:10px 22px;border-radius:30px;background:#c8ff1e;color:#111;font-weight:800;font-size:32px">${CFG.near.dist}</div></div><div style="margin-top:12px;font-size:36px;font-weight:700">LIVE at ${CFG.near.event}</div><div style="color:#8a8a96;font-size:30px;margin-top:4px">${CFG.near.info}</div></div>`);E.appendChild(ncard);
+const others=[[300,900],[820,1060],[420,620],[760,520],[240,1150]];
+// --- F: tickets first (22-26)
+const F=lay();
+F.appendChild($(`<div style="position:absolute;inset:-40px;background:url(img/09_dbd71b1f.webp) center/cover;filter:blur(10px) brightness(.4)"></div>`));
+F.appendChild($(`<div class="big" style="position:absolute;left:0;right:0;top:160px;text-align:center;font-size:100px">Fans get tickets<br><span class="lime">first.</span></div>`));
+const nt=$(`<div style="position:absolute;left:60px;right:60px;top:620px;padding:34px;border-radius:40px;background:rgba(30,30,36,.95);box-shadow:0 30px 80px rgba(0,0,0,.6)"><div style="display:flex;gap:22px;align-items:center"><img src="logo_card.png" style="width:110px;height:110px;border-radius:26px;object-fit:cover"><div><div style="font-size:30px;color:#8a8a96">WAWG · now</div><div style="font-size:40px;font-weight:800">${CFG.artist} is playing ${CFG.near.dist} from you</div></div></div>
+  <div class="btn" style="margin-top:30px;height:110px;border-radius:55px;background:#c8ff1e;color:#111;display:grid;place-items:center;font-weight:900;font-size:44px">Get tickets first</div></div>`);F.appendChild(nt);
+const btn=nt.querySelector('.btn');const tp2=$(`<div class="tap" style="left:540px;top:${620+34+110+30+55+30}px;z-index:80"></div>`);F.appendChild(tp2);
+// --- G: logo (26-30)
+const G=lay();
+const lg=$(`<div style="position:absolute;left:50%;top:400px;width:500px;margin-left:-250px"><img src="logo_card.png" style="width:500px;border-radius:80px;box-shadow:0 0 120px rgba(200,255,30,.35)"></div>`);G.appendChild(lg);
+const el1=$(`<div class="big" style="position:absolute;left:0;right:0;top:1000px;text-align:center;font-size:100px">${CFG.endLine}</div>`);G.appendChild(el1);
+const cta=$(`<div style="position:absolute;left:0;right:0;top:1400px;text-align:center"><span style="display:inline-block;padding:22px 50px;border-radius:60px;background:#fff;color:#000;font-weight:800;font-size:46px">${CFG.cta}</span></div>`);G.appendChild(cta);
+const show=(l,a,b,t)=>{l.style.display=t>=a&&t<b?'block':'none';return t>=a&&t<b};
+const pending=[];
+window.R=async function(t){
+  pending.length=0;
+  if(show(A,0,5,t)){days.forEach((d,i)=>{const k=P(t,.3+i*.9,.55+i*.9);d.style.opacity=k>0?1:0;d.style.transform=`translateX(${(1-eo(k))*-120}px)`;d.style.background=t>=.3+i*.9&&t<1.2+i*.9?'#24242c':'#141418'});
+    const l=eo(P(t,4.0,4.3));lost.style.opacity=l;lost.style.transform=`translateY(${(1-l)*30}px)`}
+  if(show(B,5,8,t)){bubs.forEach(b=>{const k=P(t,b.t0,b.t0+.2);b.el.style.display=k>0?'block':'none';b.el.style.transform=`rotate(${b.rot}deg) scale(${k>0?back(k):0})`});B.style.transform=`translateX(${t>6.5?Math.sin(t*80)*4:0}px)`}
+  show(C,8,9,t);
+  if(show(D,9,14,t)){const lt=t-9;const fi=Math.min(119,Math.max(0,Math.floor((lt-.3)*30)));const src=`cap/s4/${String(fi).padStart(4,'0')}.jpg`;if(!app.src.endsWith(src)){app.src=src;pending.push(app.decode().catch(()=>{}))}
+    const sy=eio(P(fi/30,2.2,4))*70*K;tapAnim(tp,lt,1.4);const pk=P(lt,1.4,1.55);pill.style.opacity=pk;pill.style.transform=`translateY(${-sy}px) scale(${pk>0&&pk<1?1+.15*Math.sin(pk*Math.PI):1})`;tp.style.transform+=` translateY(${-sy}px)`;
+    ph.style.transform=`scale(${lerp(.94,1,eo(P(lt,0,.4)))})`}
+  if(show(E,14,22,t)){const lt=t-14,g=cv.getContext('2d');g.clearRect(0,0,1080,1920);const cx=540,cy=940;
+    for(let r=1;r<=4;r++){g.strokeStyle=`rgba(200,255,30,${.12+.04*r})`;g.lineWidth=2;g.beginPath();g.arc(cx,cy,r*110,0,7);g.stroke()}
+    const ang=lt*2.4;const gr=g.createConicGradient?g.createConicGradient(ang,cx,cy):null;if(gr){gr.addColorStop(0,'rgba(200,255,30,.35)');gr.addColorStop(.12,'rgba(200,255,30,0)');gr.addColorStop(1,'rgba(200,255,30,0)');g.fillStyle=gr;g.beginPath();g.arc(cx,cy,440,0,7);g.fill()}
+    g.strokeStyle='rgba(200,255,30,.9)';g.lineWidth=4;g.beginPath();g.moveTo(cx,cy);g.lineTo(cx+Math.cos(ang)*440,cy+Math.sin(ang)*440);g.stroke();
+    others.forEach(([x,y],i)=>{const a=P(lt,.4+i*.25,.6+i*.25);g.fillStyle=`rgba(255,255,255,${.35*a})`;g.beginPath();g.arc(x,y,12,0,7);g.fill()});
+    g.fillStyle='#fff';g.beginPath();g.arc(cx,cy,18,0,7);g.fill();g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=3;const pu=(lt*1.2)%1;g.beginPath();g.arc(cx,cy,18+pu*60,0,7);g.globalAlpha=1-pu;g.stroke();g.globalAlpha=1;
+    g.font='600 30px Rubik';g.fillStyle='#fff';g.textAlign='center';g.fillText('YOU',cx,cy+60);
+    const p=P(lt,2.4,2.75);pin.style.opacity=p>0?1:0;pin.style.transform=`scale(${p>0?back(p):0})`;
+    if(p>=1){g.strokeStyle='rgba(200,255,30,.8)';g.setLineDash([12,10]);g.lineWidth=4;g.beginPath();g.moveTo(cx,cy);g.lineTo(640,760);g.stroke();g.setLineDash([])}
+    const c=eo(P(lt,3.0,3.45));ncard.style.opacity=c;ncard.style.transform=`translateY(${(1-c)*120}px)`}
+  if(show(F,22,26,t)){const lt=t-22;const k=eo(P(lt,0,.4));nt.style.transform=`translateY(${(1-k)*-300}px)`;nt.style.opacity=k;tapAnim(tp2,lt,1.6);
+    const done=lt>=1.75;btn.textContent=done?'✓ You’re in':'Get tickets first';btn.style.background=done?'#2ee59d':'#c8ff1e';btn.style.transform=`scale(${1-.06*Math.sin(P(lt,1.6,1.8)*Math.PI)})`}
+  if(show(G,26,30,t)){const lt=t-26;const l=P(lt,.25,.65);lg.style.opacity=l>0?1:0;lg.style.transform=`scale(${l>0?back(l):0})`;
+    const e=eo(P(lt,1.0,1.4));el1.style.opacity=e;el1.style.transform=`translateY(${(1-e)*30}px)`;const c=eo(P(lt,1.9,2.3));cta.style.opacity=c;cta.style.transform=`translateY(${(1-c)*30}px)`}
+  let f=0;for(const s of [9,14,22,26.25])if(t>=s&&t<s+.12)f=.55*(1-(t-s)/.12);flash.style.opacity=f;
+  await Promise.all([...pending,...[...stage.querySelectorAll('img')].map(i=>i.decode().catch(()=>{}))]);
+};
+const pre=[CFG.artistPhoto,'img/09_dbd71b1f.webp','logo_card.png','cap/s4/0000.jpg'].map(s=>{const i=new Image();i.src=s;return i.decode().catch(()=>{})});
+window.READY=Promise.all([document.fonts.ready,...pre]).then(()=>R(0)).then(()=>true);
+</script></body></html>

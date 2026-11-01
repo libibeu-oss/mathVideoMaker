@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000;font-family:Rubik,sans-serif;color:#fff}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:#000}
+.layer{position:absolute;inset:0;display:none;overflow:hidden}
+.big{font-weight:900;letter-spacing:-2px;line-height:.95}
+.pink{color:#ff2e88}
+.gcard{position:absolute;width:560px;padding:22px 24px;border-radius:26px;background:#1b1b1f;border:1px solid #2c2c33;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.gcard .h{display:flex;align-items:center;gap:16px}
+.gcard .av{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:26px;color:#000}
+.gcard b{font-size:29px}.gcard small{display:block;color:#8a8a96;font-size:22px}
+.gcard p{margin-top:14px;font-size:26px;color:#d8d8e0}
+.gcard .ok{margin-top:10px;font-size:22px;color:#6be3a0;font-weight:700}
+.bub{position:absolute;padding:16px 26px;border-radius:30px;background:#2b2b33;font-size:30px;font-weight:600}
+.phone{position:absolute;left:250px;top:330px;width:580px;height:1180px;border-radius:84px;background:#0b0418;border:12px solid #18181d;box-shadow:0 0 0 2px #333,0 0 140px rgba(255,46,136,.35);overflow:hidden}
+.field{margin:0 34px 22px;padding:20px 24px;border-radius:20px;background:#22143f;font-size:28px}
+.field small{display:block;color:#a996cf;font-size:20px;margin-bottom:6px}
+.board{position:absolute;left:40px;right:40px;top:470px;background:#0d0d0f;border-radius:20px;padding:26px 22px;border:2px solid #222}
+.row{display:grid;grid-template-columns:150px 1fr 220px;gap:14px;align-items:center;margin-bottom:16px}
+.cell{display:flex;gap:4px}
+.fl{display:inline-grid;place-items:center;width:44px;height:64px;background:#1c1c20;border-radius:6px;font-family:'Courier New',monospace;font-weight:700;font-size:44px;color:#ffd23f;box-shadow:inset 0 -32px 0 rgba(0,0,0,.18)}
+.st{justify-self:end;padding:10px 20px;border-radius:12px;font-weight:800;font-size:30px}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:50}
+</style></head>
+<body><div id="stage"><div id="flash"></div></div>
+<script>
+"use strict";
+// ===== EDITABLE CONTENT =====
+const CFG={
+  groups:[['Tel Aviv Parties 🎉','24K'],['Israelis in Athens 🇬🇷','8.1K'],['Rhodes Summer 2026','3.4K'],['Paris Israelis 🇫🇷','12K'],['Techno IL','19K'],['Mykonos Nights','5.2K'],['Students TLV','31K'],['Eilat Weekend','7K'],['Haifa Events','4.4K'],['Berlin Israelis 🇩🇪','9.8K'],['House Music Lovers','15K'],['Jerusalem Nightlife','6.3K']],
+  replies:['link?','is it still on??','how much?','who’s the DJ?','seen','what time?','location pls','👀'],
+  stopLine:['Stop posting','<span class="pink">everywhere.</span>'],
+  form:[['EVENT','Neon Bloom'],['WHEN','Fri · 23:00'],['WHERE','Warehouse 9, Tel Aviv'],['TICKETS','180 ₪']],
+  board:[['23:00','TEL AVIV'],['23:30','RHODES'],['00:00','ATHENS'],['22:00','MYKONOS'],['23:00','PARIS'],['--:--','BERLIN']],
+  endLine:'Your party.<br>Everywhere<br><span class="pink">Israelis</span> go.',
+  cta:'List your party · wawg.live',
+};
+// ============================
+const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),P=(t,a,b)=>cl((t-a)/(b-a)),eo=x=>1-Math.pow(1-x,3),lerp=(a,b,x)=>a+(b-a)*x;
+const back=x=>{const c1=2,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+function rng(s){return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+const $=h=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild};
+const stage=document.getElementById('stage'),flash=document.getElementById('flash');
+const lay=()=>{const l=$('<div class="layer"></div>');stage.insertBefore(l,flash);return l};
+// --- A: the posting grind (0-7)
+const A=lay();
+const ctr=$(`<div style="position:absolute;left:0;right:0;top:110px;text-align:center;z-index:20"><div style="font-weight:700;font-size:40px;letter-spacing:6px;color:#8a8a96">POSTED IN</div><div class="big n" style="font-size:230px">0</div><div style="font-weight:700;font-size:40px;letter-spacing:6px;color:#8a8a96">GROUPS</div></div>`);A.appendChild(ctr);
+const num=ctr.querySelector('.n');
+const rnd=rng(7),cards=[],NC=34,cols=['#ff2e88','#ffd23f','#7cf0b5','#7aa7ff','#ff8a00','#c8a2ff'];
+for(let k=0;k<NC;k++){const isB=k%3===2;const x=rnd()*560-20,y=520+rnd()*1150,rot=(rnd()-.5)*16;
+  let el;if(isB){el=$(`<div class="bub">${CFG.replies[k%CFG.replies.length]}</div>`)}else{const g=CFG.groups[k%CFG.groups.length];
+    el=$(`<div class="gcard"><div class="h"><div class="av" style="background:${cols[k%cols.length]}">${g[0][0]}</div><div><b>${g[0]}</b><small>${g[1]} members</small></div></div><p>🔥 PARTY THIS FRIDAY · link in bio</p><div class="ok">✓ Posted</div></div>`)}
+  el.style.left=x+'px';el.style.top=y+'px';A.appendChild(el);cards.push({el,t0:.25+6.2*(1-Math.pow(1-k/NC,.55)),rot})}
+const A6=$(`<div style="position:absolute;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:30"><div class="big" style="font-size:120px;text-align:center">Seen by<br><span class="pink">nobody.</span></div></div>`);A.appendChild(A6);
+// --- B: stop (7-8)
+const B=lay();B.appendChild($(`<div class="big" style="position:absolute;left:70px;right:70px;top:760px;font-size:150px">${CFG.stopLine.join('<br>')}</div>`));
+// --- C: post once (8-12)
+const C=lay();
+C.appendChild($(`<div class="big" style="position:absolute;left:0;right:0;top:120px;text-align:center;font-size:110px">Post it <span class="pink">once.</span></div>`));
+const ph=$(`<div class="phone"><div style="padding:110px 0 0"><div style="margin:0 34px 30px;font-weight:800;font-size:44px">New event</div></div></div>`);C.appendChild(ph);
+const fields=CFG.form.map(f=>{const d=$(`<div class="field"><small>${f[0]}</small><span class="v"></span></div>`);ph.firstChild.appendChild(d);return {d,v:d.querySelector('.v'),txt:f[1]}});
+const pub=$(`<div style="position:absolute;left:34px;right:34px;bottom:70px;height:110px;border-radius:55px;background:linear-gradient(90deg,#ff4fd8,#b44bff);display:grid;place-items:center;font-weight:800;font-size:40px">Publish</div>`);ph.appendChild(pub);
+const ok=$(`<div style="position:absolute;inset:0;display:grid;place-items:center;background:rgba(11,4,24,.92)"><div style="text-align:center"><div style="width:200px;height:200px;border-radius:50%;background:#2ee59d;margin:0 auto;display:grid;place-items:center;font-size:120px;color:#06301f;font-weight:900">✓</div><div style="margin-top:28px;font-weight:800;font-size:54px">Published</div></div></div>`);ph.appendChild(ok);
+// --- D: departures board (12-20)
+const D=lay();
+D.appendChild($(`<div style="position:absolute;left:40px;right:40px;top:180px"><div style="font-weight:800;font-size:40px;letter-spacing:8px;color:#ffd23f">✈ DEPARTURES · TONIGHT</div><div class="big" style="font-size:96px;margin-top:20px">They find <span class="pink">you.</span></div></div>`));
+const board=$(`<div class="board"></div>`);D.appendChild(board);
+const CH='ABCDEFGHIJKLMNOPRSTUVWXYZ';
+const rows=CFG.board.map((r,i)=>{const city=r[1].padEnd(9,' ');const el=$(`<div class="row"><div style="font-family:'Courier New',monospace;font-weight:700;font-size:40px;color:#ffd23f">${r[0]}</div><div class="cell">${[...city].map(()=>'<span class="fl"></span>').join('')}</div><div class="st"></div></div>`);board.appendChild(el);return {el,city,fls:[...el.querySelectorAll('.fl')],st:el.querySelector('.st'),t0:12.4+i*.85,soon:r[0].startsWith('-')}});
+// --- E: the payoff (20-25)
+const E=lay();
+const ev=$(`<div style="position:absolute;left:90px;right:90px;top:360px;border-radius:40px;overflow:hidden;background:#151518;box-shadow:0 40px 100px rgba(0,0,0,.6)"><div style="height:620px;background:url(img/09_dbd71b1f.webp) center/cover"></div><div style="padding:30px 36px"><div class="big" style="font-size:80px">Neon Bloom</div><div style="color:#9a9aa6;font-size:32px;margin-top:8px">Warehouse 9 · Tel Aviv · Fri 23:00</div><div class="chips" style="display:flex;gap:14px;margin-top:26px;flex-wrap:wrap"></div></div></div>`);E.appendChild(ev);
+const chips=[['♥ Saved','2.4K'],['Followers','+860'],['Tickets','312/312']].map(c=>{const d=$(`<div style="padding:14px 22px;border-radius:40px;background:#26262c;font-size:30px;font-weight:700">${c[0]} <span class="pink">${c[1]}</span></div>`);ev.querySelector('.chips').appendChild(d);return d});
+const stamp=$(`<div style="position:absolute;left:0;right:0;top:600px;text-align:center"><span style="display:inline-block;border:12px solid #ff2e88;color:#ff2e88;font-weight:900;font-size:150px;padding:10px 40px;border-radius:24px;transform:rotate(-12deg)">SOLD OUT</span></div>`);E.appendChild(stamp);
+// --- F: logo (25-30)
+const F=lay();
+const lg=$(`<div style="position:absolute;left:50%;top:430px;width:520px;margin-left:-260px"><img src="logo_card.png" style="width:520px;border-radius:84px;box-shadow:0 0 120px rgba(255,46,136,.45)"></div>`);F.appendChild(lg);
+const el1=$(`<div class="big" style="position:absolute;left:0;right:0;top:1050px;text-align:center;font-size:92px">${CFG.endLine}</div>`);F.appendChild(el1);
+const cta=$(`<div style="position:absolute;left:0;right:0;top:1400px;text-align:center"><span style="display:inline-block;padding:22px 50px;border-radius:60px;background:#fff;color:#000;font-weight:800;font-size:46px">${CFG.cta}</span></div>`);F.appendChild(cta);
+const show=(l,a,b,t)=>{l.style.display=t>=a&&t<b?'block':'none';return t>=a&&t<b};
+window.R=async function(t){
+  if(show(A,0,7,t)){const n=cards.filter(c=>t>=c.t0).length;num.textContent=Math.round(87*n/NC);
+    const shake=t>4?Math.sin(t*70)*(t-4)*2.2:0;A.style.transform=`translate(${shake}px,${shake*.6}px)`;
+    cards.forEach(c=>{const k=P(t,c.t0,c.t0+.18);c.el.style.display=k>0?'block':'none';c.el.style.transform=`rotate(${c.rot}deg) scale(${k>0?back(k):0})`});
+    const a6=P(t,5.7,6.0);A6.style.opacity=a6;A6.style.display=a6>0?'grid':'none'}
+  show(B,7,8,t);
+  if(show(C,8,12,t)){fields.forEach((f,i)=>{const s=8.5+i*.5;const n=Math.floor(cl((t-s)/.4)*f.txt.length);f.v.textContent=f.txt.slice(0,n)+(t>s&&n<f.txt.length?'|':'')});
+    const pk=P(t,10.75,10.9);pub.style.transform=`scale(${1-.06*Math.sin(pk*Math.PI)})`;const o=P(t,11.0,11.2);ok.style.opacity=o;ok.style.display=o>0?'grid':'none';ok.firstChild.style.transform=`scale(${o>0?back(P(t,11.0,11.35)):0})`;
+    ph.style.transform=`scale(${lerp(.92,1,eo(P(t,8,8.4)))})`}
+  if(show(D,12,20,t)){rows.forEach(r=>{r.fls.forEach((f,j)=>{const done=r.t0+.06*j+.35;const ch=r.city[j];if(t<r.t0){f.textContent='';return}f.textContent=t>=done?ch:(ch===' '?'':CH[Math.floor((t*30+j*7)%CH.length)])});
+      const s=P(t,r.t0+.9,r.t0+1.0);r.st.textContent=s>0?(r.soon?'SOON':'LIVE'):'';r.st.style.background=r.soon?'#2a2a30':'#2ee59d';r.st.style.color=r.soon?'#aaa':'#04301e';r.st.style.opacity=s;r.st.style.transform=`scale(${s>0?back(s):0})`})}
+  if(show(E,20,25,t)){const k=eo(P(t,20,20.5));ev.style.transform=`translateY(${(1-k)*200}px) scale(${lerp(.9,1,k)})`;
+    chips.forEach((c,i)=>{const kk=P(t,21+i*.45,21.25+i*.45);c.style.opacity=kk>0?1:0;c.style.transform=`scale(${kk>0?back(kk):0})`});
+    const s=P(t,23.3,23.55);stamp.style.opacity=s>0?1:0;stamp.firstChild.style.transform=`rotate(-12deg) scale(${s>0?lerp(2.4,1,eo(s)):0})`}
+  if(show(F,25,30,t)){const l=P(t,25.3,25.7);lg.style.opacity=l>0?1:0;lg.style.transform=`scale(${l>0?back(l):0})`;
+    const e=eo(P(t,26.1,26.5));el1.style.opacity=e;el1.style.transform=`translateY(${(1-e)*30}px)`;const c=eo(P(t,27.0,27.4));cta.style.opacity=c;cta.style.transform=`translateY(${(1-c)*30}px)`}
+  let f=0;for(const s of [8,12,20,25.3])if(t>=s&&t<s+.12)f=.6*(1-(t-s)/.12);flash.style.opacity=f;
+  await Promise.all([...stage.querySelectorAll('img')].map(i=>i.decode().catch(()=>{})));
+};
+const pre=['img/09_dbd71b1f.webp','logo_card.png'].map(s=>{const i=new Image();i.src=s;return i.decode().catch(()=>{})});
+window.READY=Promise.all([document.fonts.ready,...pre]).then(()=>R(0)).then(()=>true);
+</script></body></html>

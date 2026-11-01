@@ -110,7 +110,7 @@ class MyScene(SafeScene):
 
 **③ 字体字形检查（防方框 □）：** 写完先跑（PASS 才继续）：
 ```bash
-python3 .cursor/skills/math-explainer/scripts/check_text.py <主题>/scene.py
+python3 .claude/skills/math-explainer/scripts/check_text.py <主题>/scene.py
 ```
 它按你用的字体逐字符检查，缺字形的字符会被列出来（如 `'ₙ'(U+2099)`）。
 

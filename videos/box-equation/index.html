@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>כמה שווה הקופסה?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap">
+<style>
+  :root { --bg:#0f1419; --panel:#11161d; --line:#222b36; --fg:#e8ecf0; --muted:#9aa4b2;
+          --box:#ffd166; --unit:#40c8c8; --ok:#5ed68c; --bad:#ff636e; --accent:#5b9cff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Rubik", system-ui, "Arial Hebrew", sans-serif; background:var(--bg);
+         color:var(--fg); line-height:1.7; }
+  .wrap { max-width:760px; margin:0 auto; padding:22px 16px 44px; }
+  header { text-align:center; margin-bottom:12px; }
+  header h1 { margin:0 0 .25rem; font-size:1.5rem; }
+  header p { color:var(--muted); margin:0; font-size:.95rem; }
+  .eq { text-align:center; font-size:1.7rem; font-weight:700; direction:ltr; unicode-bidi:isolate;
+        margin:6px 0 12px; letter-spacing:.02em; }
+  .bx { display:inline-block; min-width:1.5em; border:3px solid var(--box); border-radius:6px;
+        color:var(--box); line-height:1.25; padding:0 .15em; }
+  .stage { max-width:480px; margin:0 auto; }
+  canvas { width:100%; aspect-ratio:4/3; background:var(--panel); border:1px solid var(--line);
+           border-radius:12px; display:block; }
+  .controls { margin-top:12px; }
+  .controls label { display:block; margin:8px 0 2px; color:var(--muted); font-size:.95rem; }
+  .val { color:var(--box); font-weight:700; }
+  input[type=range] { width:100%; accent-color:var(--box); direction:ltr; }
+  .btns { display:flex; gap:10px; margin-top:12px; }
+  button { flex:1; font:inherit; font-weight:500; padding:10px 12px; border-radius:10px; cursor:pointer;
+           border:1px solid var(--line); background:#1a222c; color:var(--fg); }
+  button:hover { background:#222c38; }
+  button:disabled { opacity:.45; cursor:default; }
+  .readout { margin:14px auto 0; text-align:center; font-weight:700; font-size:1.1rem; min-height:1.7em; }
+  .divider { border:none; border-top:1px solid var(--line); margin:26px auto 0; max-width:680px; }
+  .explain { max-width:680px; margin:0 auto; }
+  .explain h2 { font-size:1.1rem; color:var(--muted); font-weight:500; margin:22px 0 6px; }
+  .explain p, .explain li { margin:.5rem 0; }
+  .m { direction:ltr; unicode-bidi:isolate; white-space:nowrap; font-weight:500; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>כמה שווה הקופסה?</h1>
+    <p>בכל הקופסאות יש אותו מספר. מתי המאזניים מאוזנים?</p>
+  </header>
+  <div class="eq" id="eq"></div>
+
+  <section class="stage">
+    <canvas id="c"></canvas>
+    <div class="controls">
+      <label>המספר בכל קופסה: <span id="v-val" class="val"></span>
+        <input id="v" type="range" min="0" max="12" step="1" value="5"></label>
+    </div>
+    <div class="btns">
+      <button id="remove">הורידו קופסה משני הצדדים</button>
+      <button id="reset">התחילו מחדש</button>
+    </div>
+    <div class="readout" id="readout"></div>
+  </section>
+
+  <hr class="divider">
+
+  <section class="explain">
+    <h2>איך פותרים בלי לנחש?</h2>
+    <p>שוויון הוא כמו מאזניים מאוזנים: <span class="m">5 × □</span> בצד אחד, <span class="m">4 × □ + 7</span> בצד השני.</p>
+    <ol>
+      <li>מורידים קופסה אחת מכל צד — המאזניים נשארים מאוזנים.</li>
+      <li>חוזרים על זה עד שמשמאל נשארת קופסה אחת: <span class="m">□ = 7</span>.</li>
+      <li>בודקים: <span class="m">5 × 7 = 35</span>, וגם <span class="m">4 × 7 + 7 = 35</span>. נכון!</li>
+    </ol>
+    <p style="color:var(--muted)">נסו: הזיזו את המספר בקופסה וראו לאיזה צד המאזניים נוטים. בסרטון רואים את כל הפתרון צעד אחר צעד.</p>
+  </section>
+</div>
+
+<script>
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const START = { left: 5, right: 4, units: 7 };
+  const state = { v: 5, left: 5, right: 4, units: 7, angle: 0 };
+  const COL = { box:'#ffd166', unit:'#40c8c8', beam:'#e8ecf0', dim:'#46505f', pan:'#96a0af', bg:'#0f1419' };
+
+  function targetAngle() {
+    const L = state.left * state.v, R = state.right * state.v + state.units;
+    return Math.max(-0.22, Math.min(0.22, (R - L) * 0.03));   // > 0: right side goes down
+  }
+
+  function rowOf(n, size, gap, cx, y, fill, label) {
+    const w = n * size + (n - 1) * gap;
+    for (let i = 0; i < n; i++) {
+      const x = cx - w / 2 + i * (size + gap);
+      ctx.fillStyle = fill; ctx.fillRect(x, y - size, size, size);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.strokeRect(x, y - size, size, size);
+      if (label !== undefined) {
+        ctx.fillStyle = COL.bg; ctx.font = `700 ${size * 0.55}px Rubik, sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, x + size / 2, y - size / 2 + 1);
+      }
+    }
+  }
+
+  function draw() {
+    const w = cv.clientWidth, h = cv.clientHeight, k = w / 480;
+    ctx.clearRect(0, 0, w, h);
+    const piv = [w / 2, h * 0.28], half = w * 0.29, hang = h * 0.26, panW = w * 0.38;
+    // stand
+    ctx.fillStyle = COL.dim; ctx.beginPath();
+    ctx.moveTo(piv[0] - 60 * k, h * 0.9); ctx.lineTo(piv[0] + 60 * k, h * 0.9); ctx.lineTo(piv[0], h * 0.8); ctx.fill();
+    ctx.strokeStyle = COL.pan; ctx.lineWidth = 5 * k; ctx.beginPath();
+    ctx.moveTo(piv[0], h * 0.82); ctx.lineTo(piv[0], piv[1]); ctx.stroke();
+    const a = state.angle, dx = Math.cos(a) * half, dy = Math.sin(a) * half;
+    const ends = [[piv[0] - dx, piv[1] - dy], [piv[0] + dx, piv[1] + dy]];
+    const pans = ends.map(([x, y]) => [x, y + hang]);
+    pans.forEach(([px, py], i) => {
+      ctx.strokeStyle = COL.dim; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(ends[i][0], ends[i][1]); ctx.lineTo(px - panW / 2 + 8, py);
+      ctx.moveTo(ends[i][0], ends[i][1]); ctx.lineTo(px + panW / 2 - 8, py); ctx.stroke();
+      ctx.fillStyle = COL.pan; ctx.beginPath();
+      ctx.moveTo(px - panW / 2, py); ctx.lineTo(px + panW / 2, py);
+      ctx.lineTo(px + panW / 2 - 14 * k, py + 9 * k); ctx.lineTo(px - panW / 2 + 14 * k, py + 9 * k); ctx.fill();
+    });
+    ctx.strokeStyle = COL.beam; ctx.lineWidth = 6 * k; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(...ends[0]); ctx.lineTo(...ends[1]); ctx.stroke();
+    ctx.fillStyle = COL.beam; ctx.beginPath(); ctx.arc(piv[0], piv[1], 7 * k, 0, 7); ctx.fill();
+    const bs = 22 * k, us = 13 * k;
+    rowOf(state.left, bs, 4 * k, pans[0][0], pans[0][1], COL.box, String(state.v));
+    rowOf(state.right, bs, 4 * k, pans[1][0], pans[1][1], COL.box, String(state.v));
+    rowOf(state.units, us, 3 * k, pans[1][0], pans[1][1] - (state.right ? bs + 4 * k : 0), COL.unit);
+    // weights under pans
+    const L = state.left * state.v, R = state.right * state.v + state.units;
+    ctx.font = `700 ${15 * k}px Rubik, sans-serif`; ctx.textAlign = 'center'; ctx.fillStyle = COL.box;
+    ctx.fillText(String(L), pans[0][0], pans[0][1] + 30 * k);
+    ctx.fillText(String(R), pans[1][0], pans[1][1] + 30 * k);
+  }
+
+  function boxTok(n, v) { return n ? `${n} × <span class="bx">${v}</span>` : ''; }
+
+  function update() {
+    const L = state.left * state.v, R = state.right * state.v + state.units;
+    const right = [boxTok(state.right, state.v), String(state.units)].filter(Boolean).join(' + ');
+    document.getElementById('eq').innerHTML = `${boxTok(state.left, state.v)} = ${right}`;
+    document.getElementById('v-val').textContent = state.v;
+    const ro = document.getElementById('readout');
+    if (L === R) { ro.style.color = 'var(--ok)'; ro.textContent = `מאוזן! ${L} = ${R} — בכל קופסה יש ${state.v}.`; }
+    else { ro.style.color = 'var(--bad)'; ro.textContent = `לא מאוזן: משמאל ${L}, מימין ${R}. ` + (L > R ? 'שמאל כבד יותר.' : 'ימין כבד יותר.'); }
+    document.getElementById('remove').disabled = !(state.left > 1 && state.right > 0);
+  }
+
+  // smooth tilt animation
+  function tick() {
+    const t = targetAngle();
+    state.angle += (t - state.angle) * 0.15;
+    draw();
+    if (Math.abs(t - state.angle) > 0.0005) requestAnimationFrame(tick);
+  }
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1, r = cv.getBoundingClientRect();
+    cv.width = r.width * dpr; cv.height = r.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('load', () => {
+    const slider = document.getElementById('v');
+    slider.addEventListener('input', () => { state.v = parseInt(slider.value, 10); update(); tick(); });
+    document.getElementById('remove').addEventListener('click', () => {
+      if (state.left > 1 && state.right > 0) { state.left--; state.right--; update(); tick(); }
+    });
+    document.getElementById('reset').addEventListener('click', () => {
+      Object.assign(state, START); update(); tick();
+    });
+    update(); state.angle = targetAngle(); resize();
+  });
+</script>
+</body>
+</html>

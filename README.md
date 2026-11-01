@@ -1,69 +1,82 @@
-# mathVideoMaker
+# mathVideoMaker — סרטוני הסבר במתמטיקה + דפים אינטראקטיביים, עם Claude
 
-一个 Cursor Agent Skill：根据需求**同时生成「数学讲解视频」（Manim 渲染成 MP4）和「交互式网页」（自包含 HTML）**，并把实现细节打磨到位，让能力较弱、甚至没有视觉能力的模型也能稳定产出准确、生动的内容。
+Skill ל־Claude שהופך נושא מתמטי לשני תוצרים תואמים:
+- **סרטון הסבר (MP4)** — מראה *למה* משהו נכון, צעד אחר צעד, עם כתוביות.
+- **דף אינטראקטיבי (קובץ HTML אחד)** — סליידרים שמשנים את אותם פרמטרים, כדי לשחק עם המושג.
 
-参考实现：[ManimCommunity/manim](https://github.com/ManimCommunity/manim)（基于 Manim Community v0.20+）。
+שני התוצרים חולקים אותם סימונים, טווחים וצבעים. הסרטון מסביר, הדף נותן להתנסות.
 
-## 它能做什么
-- **讲解视频**：用 Manim 把一个数学/物理概念的**推导过程**动画化，渲染成 MP4。
-- **交互式网页**：自包含单文件 HTML（KaTeX 公式 + canvas 交互），让观众拖参数、即时看变化。
-- 二者**共享同一套设计**（概念、记号、参数、配色），互为补充：视频讲明白，网页玩明白。
+> מבוסס על [GordenSun/mathVideoMaker](https://github.com/GordenSun/mathVideoMaker) (Skill ל־Cursor, בסינית).
+> הגרסה הזו הותאמה ל־Claude: הוראות באנגלית, תמיכה מלאה בעברית (מימין לשמאל), ומנוע אנימציה קל
+> שעובד גם בלי Manim — למשל בסביבת הענן של Claude, שבה אי אפשר להתקין חבילות.
 
-## 设计要点（为什么这个 Skill 不一样）
-- **讲「为什么」**：强制演示推导/证明，而不是只展示结论（含"遮住旁白也能看懂"的硬性自检）。
-- **无视觉也能保证质量**：把"看图纠错"换成文字化检查——
-  - `SafeScene` 渲染时自动打印 `[layout]` 布局警告（出界/重叠）；
-  - `check_text.py` 静态查字体缺字形（防方框 □）；
-  - `check_web.py` 静态查网页（公式/id/滑块/canvas/布局/JS 语法）。
-- **机械化布局 + 生动化**：安全区 + `fit_content` 防出界；深色配色 + 辉光 + 强调动效；字幕带底衬。
+## דוגמאות מוכנות (בעברית)
 
-## 效果演示
-小学题「□ + 28 = □ × 5」讲解视频（GIF 预览）：
+| נושא | סרטון | דף אינטראקטיבי |
+|------|-------|----------------|
+| משפט פיתגורס — הוכחה בסידור מחדש | [`videos/pythagoras/Pythagoras.mp4`](videos/pythagoras/Pythagoras.mp4) | [`videos/pythagoras/index.html`](videos/pythagoras/index.html) |
+| כמה שווה הקופסה? `5 × □ = 4 × □ + 7` (יסודי) | [`videos/box-equation/BoxEquation.mp4`](videos/box-equation/BoxEquation.mp4) | [`videos/box-equation/index.html`](videos/box-equation/index.html) |
+| הפרבולה `y = n·x²` — מה עושה n? | [`videos/parabola-n/ParabolaN.mp4`](videos/parabola-n/ParabolaN.mp4) | [`videos/parabola-n/index.html`](videos/parabola-n/index.html) |
 
-![演示：□ + 28 = □ × 5](examples/BoxDivide.gif)
+בכל תיקייה יש גם `storyboard.md` (התכנון) ו־`scene.py` (קוד הסרטון).
+הדוגמה המקורית בסינית: [`examples/BoxDivide.mp4`](examples/BoxDivide.mp4).
 
-> 看完整高清版（含原速）：[examples/BoxDivide.mp4](examples/BoxDivide.mp4)。同一主题还会生成配套的交互式网页（拖动 □ 让天平平衡）。
+## התקנה
 
-## 安装
-把本仓库的 `skills/math-explainer/` 放到你的项目（或个人目录）的 `.cursor/skills/` 下：
+**Claude.ai / אפליקציית Claude** — דחסו את התיקייה `skills/math-explainer/` לקובץ zip והעלו אותו
+בהגדרות, בחלק של ה־Skills.
 
+**Claude Code** — העתיקו את התיקייה לתיקיית ה־Skills:
 ```bash
-git clone https://github.com/GordenSun/mathVideoMaker.git
-
-# 方式一：作为项目技能（随项目生效）
-cp -R mathVideoMaker/skills/math-explainer  你的项目/.cursor/skills/
-
-# 方式二：作为个人技能（所有项目可用）
-cp -R mathVideoMaker/skills/math-explainer  ~/.cursor/skills/
+git clone https://github.com/libibeu-oss/mathVideoMaker.git
+cp -R mathVideoMaker/skills/math-explainer ~/.claude/skills/          # לכל הפרויקטים
+# או: cp -R mathVideoMaker/skills/math-explainer <project>/.claude/skills/
 ```
 
-## 环境（仅生成视频需要；纯网页可跳过）
-macOS / Linux：
+## שימוש
+
+פשוט מבקשים מ־Claude, למשל:
+- "תכין סרטון שמסביר את משפט פיתגורס"
+- "תסביר לילדים בכיתה ג׳ איך פותרים 5 × □ = 4 × □ + 7"
+- "תראה מה קורה לגרף של y = n·x² כש־n משתנה"
+
+Claude עובד לפי השלבים ב־`SKILL.md`: סטוריבורד ← בדיקת סביבה ← סרטון ← דף ← בדיקות ← מסירה.
+
+## שני מנועים לסרטון
+
+`scripts/check_env.py` בודק מה זמין ובוחר:
+
+| מנוע | מתי | צריך |
+|------|-----|------|
+| **Manim** | כשהוא מותקן (למשל במחשב שלכם) | `scripts/setup_manim.sh` מתקין הכל |
+| **mathviz_lite** | כשאין Manim (ברירת המחדל בענן) | numpy, Pillow, opencv, ffmpeg |
+
+`mathviz_lite` (בקובץ `templates/mathviz_lite.py`) כולל:
+- טקסט בעברית מימין לשמאל, עם ביטויים מתמטיים שנשארים בסדר הנכון (`3² + 4² = 5²`).
+- צורות חלקות, אנימציות (הופעה, ציור, כתיבה, תנועה, שינוי צורה), צירים וגרפים.
+- בדיקות אוטומטיות: גליפים חסרים בגופן, יציאה מהמסך וחפיפת טקסט.
+- תצוגה מקדימה מהירה של תמונות מפתח (`MATHVIZ_PREVIEW=1 MATHVIZ_SNAP_DIR=...`).
+- גופן Rubik מצורף (רישיון OFL).
+
+רינדור דוגמה:
 ```bash
-bash .cursor/skills/math-explainer/scripts/setup_manim.sh   # 装 manim + ffmpeg + 系统库 + fonttools
-python3 .cursor/skills/math-explainer/scripts/check_env.py  # 体检
+python3 videos/pythagoras/scene.py                     # 1080p
+MATHVIZ_QUALITY=m python3 videos/pythagoras/scene.py   # 720p, מהיר יותר
 ```
-> macOS 关键依赖：`cairo`、`pango`、`pkg-config`（pip 构建 pycairo 必需，脚本已包含）。公式可选 LaTeX；没有 LaTeX 时用 `Text`/`frow` 即可。
 
-## 用法
-在 Cursor 里直接对 Agent 说，例如：
-- “做一个视频，讲解勾股定理”
-- “给小学生讲解 5×□ = 4×□ + 7”
-- “讲 y=n·x² 随 n 变化”
+## מבנה
 
-Agent 会读 `SKILL.md` 按阶段流程产出**视频 + 配套网页**，成品放在主题文件夹根目录（`<主题>/<场景名>.mp4` 与 `<主题>/index.html`）。
-
-## 目录结构
 ```
 mathVideoMaker/
-├── skills/math-explainer/         # 把它复制到 .cursor/skills/ 下使用
-│   ├── SKILL.md                   # 主编排：阶段流程 + 检查关卡
-│   ├── references/                # 教学法/分镜、Manim 指南、配方、网页指南
-│   ├── scripts/                   # setup / check_env / check_text / check_web / render
-│   └── templates/                 # 场景骨架、mathviz 护栏、黄金范例、网页与分镜模板
-└── examples/                      # 效果演示视频
+├── skills/math-explainer/      # ה־Skill עצמו (את זה מתקינים)
+│   ├── SKILL.md                # השלבים וכללי האיכות
+│   ├── references/             # פדגוגיה וסטוריבורד, Manim, דפים אינטראקטיביים (בסינית)
+│   ├── scripts/                # check_env / check_text / check_web / render / setup
+│   └── templates/              # mathviz_lite, תבניות סצנה, דף, סטוריבורד, גופנים
+├── videos/                     # שלוש הדוגמאות בעברית
+└── examples/                   # הדוגמה המקורית
 ```
 
 ---
 
-感谢 [LinuxDO](https://linux.do) 社区的支持
+תודה ל־GordenSun על ה־Skill המקורי ולקהילת [LinuxDO](https://linux.do).

@@ -13,9 +13,9 @@
 
 用法：把本文件【和 mathviz.py 一起】复制到 <主题>/，改 TITLE 后按分镜填各 derive_step。
 渲染：
-  bash .cursor/skills/math-explainer/scripts/check_text.py <主题>/scene.py     # 先查字体方框
-  bash .cursor/skills/math-explainer/scripts/render.sh   <主题>/scene.py MathExplainer s   # 静帧
-  bash .cursor/skills/math-explainer/scripts/render.sh   <主题>/scene.py MathExplainer m   # 草稿
+  bash .claude/skills/math-explainer/scripts/check_text.py <主题>/scene.py     # 先查字体方框
+  bash .claude/skills/math-explainer/scripts/render.sh   <主题>/scene.py MathExplainer s   # 静帧
+  bash .claude/skills/math-explainer/scripts/render.sh   <主题>/scene.py MathExplainer m   # 草稿
 """
 from manim import *
 from mathviz import (SafeScene, fit_content, frow, with_glow,

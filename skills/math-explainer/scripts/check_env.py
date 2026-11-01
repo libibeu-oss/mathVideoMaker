@@ -34,13 +34,34 @@ def main() -> int:
     core_ok = True
 
     # manim
+    have_manim = True
     try:
         import manim  # noqa
         line(GREEN, " ok ", f"manim {manim.__version__}")
     except Exception as e:  # noqa
+        have_manim = False
+        line(YEL, "warn", f"manim not importable ({e}) -> checking the mathviz_lite fallback engine")
+
+    # mathviz_lite fallback (numpy + Pillow/raqm + opencv + ffmpeg) — works where PyPI is blocked
+    have_lite = True
+    for mod in ("numpy", "PIL", "cv2"):
+        try:
+            __import__(mod)
+        except Exception:
+            have_lite = False
+            line(RED if not have_manim else YEL, "miss", f"python module {mod} (needed by mathviz_lite)")
+    try:
+        from PIL import features
+        if features.check("raqm"):
+            line(GREEN, " ok ", "Pillow has raqm -> right-to-left text (Hebrew/Arabic) renders correctly")
+        else:
+            line(YEL, "warn", "Pillow without raqm -> Hebrew/Arabic text may render reversed")
+    except Exception:
+        pass
+    if not have_manim and not have_lite:
         core_ok = False
-        line(RED, "FAIL", f"无法导入 manim: {e}")
-        line(YEL, "fix ", "运行 setup_manim.sh，或在已激活的环境里 pip install manim")
+        line(RED, "FAIL", "neither manim nor the mathviz_lite dependencies are available")
+        line(YEL, "fix ", "run setup_manim.sh, or pip install numpy pillow opencv-python")
 
     # ffmpeg
     if shutil.which("ffmpeg"):
@@ -62,7 +83,9 @@ def main() -> int:
 
     print()
     if core_ok:
-        line(GREEN, "PASS", "核心环境就绪，可以开始渲染视频。")
+        engine = "manim" if have_manim else "lite"
+        line(GREEN, "PASS", f"ready to render. ENGINE={engine}"
+             + ("" if have_manim else "  (use templates/mathviz_lite.py + scene_lite_template.py)"))
         return 0
     line(RED, "STOP", "核心环境不完整，先修复上面的 FAIL 再继续。")
     return 1

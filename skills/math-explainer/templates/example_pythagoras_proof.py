@@ -11,8 +11,8 @@
   大正方形相等、扣掉的三角形相等 ⇒ 剩下的面积相等 ⇒ a²+b²=c²
 
 渲染：
-  bash .cursor/skills/math-explainer/scripts/render.sh <这个文件> PythagorasProof s
-  bash .cursor/skills/math-explainer/scripts/render.sh <这个文件> PythagorasProof m
+  bash .claude/skills/math-explainer/scripts/render.sh <这个文件> PythagorasProof s
+  bash .claude/skills/math-explainer/scripts/render.sh <这个文件> PythagorasProof m
 """
 from manim import *
 import numpy as np

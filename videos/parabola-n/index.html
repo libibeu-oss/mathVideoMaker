@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הפרבולה y = n·x²</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap">
+<style>
+  :root { --bg:#0f1419; --panel:#11161d; --line:#222b36; --fg:#e8ecf0; --muted:#9aa4b2;
+          --curve:#5b9cff; --base:#46505f; --bar:#ffd166; --mark:#5ed68c; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Rubik", system-ui, "Arial Hebrew", sans-serif; background:var(--bg);
+         color:var(--fg); line-height:1.7; }
+  .wrap { max-width:760px; margin:0 auto; padding:22px 16px 44px; }
+  header { text-align:center; margin-bottom:16px; }
+  header h1 { margin:0 0 .25rem; font-size:1.5rem; }
+  header p { color:var(--muted); margin:0; font-size:.95rem; }
+  .stage { max-width:440px; margin:0 auto; }
+  canvas { width:100%; aspect-ratio:1/1; background:var(--panel); border:1px solid var(--line);
+           border-radius:12px; display:block; }
+  .controls { margin-top:12px; }
+  .controls label { display:block; margin:8px 0 2px; color:var(--muted); font-size:.95rem; }
+  .val { color:var(--bar); font-weight:700; direction:ltr; unicode-bidi:isolate; }
+  input[type=range] { width:100%; accent-color:var(--curve); direction:ltr; }
+  .presets { display:flex; gap:8px; margin-top:10px; direction:ltr; }
+  .presets button { flex:1; font:inherit; font-weight:500; padding:8px 0; border-radius:10px; cursor:pointer;
+                    border:1px solid var(--line); background:#1a222c; color:var(--fg); }
+  .presets button:hover { background:#222c38; }
+  .readout { margin:14px auto 0; text-align:center; font-weight:700; font-size:1.1rem; min-height:1.7em; }
+  .divider { border:none; border-top:1px solid var(--line); margin:26px auto 0; max-width:680px; }
+  .explain { max-width:680px; margin:0 auto; }
+  .explain h2 { font-size:1.1rem; color:var(--muted); font-weight:500; margin:22px 0 6px; }
+  .explain p, .explain li { margin:.5rem 0; }
+  .m { direction:ltr; unicode-bidi:isolate; white-space:nowrap; font-weight:500; }
+  .formula { background:#161c24; border:1px solid var(--line); border-radius:10px; padding:10px 16px;
+             margin:12px 0; text-align:center; font-size:1.4rem; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>הפרבולה <span class="m">y = n·x²</span></h1>
+    <p>הזיזו את n וראו: כל גובה על הגרף מוכפל ב־n.</p>
+  </header>
+
+  <section class="stage">
+    <canvas id="c"></canvas>
+    <div class="controls">
+      <label>הערך של n: <span class="m">n = <span id="n-val" class="val"></span></span>
+        <input id="n" type="range" min="-3" max="3" step="0.1" value="1"></label>
+    </div>
+    <div class="presets">
+      <button data-n="-1">n = −1</button>
+      <button data-n="0">n = 0</button>
+      <button data-n="0.5">n = 0.5</button>
+      <button data-n="1">n = 1</button>
+      <button data-n="2">n = 2</button>
+    </div>
+    <div class="readout" id="readout"></div>
+  </section>
+
+  <hr class="divider">
+
+  <section class="explain">
+    <h2>מה רואים כאן?</h2>
+    <p>הקו האפור הוא <span class="m">y = x²</span>. הקו הכחול הוא <span class="m">y = n·x²</span>.
+       הקווים הצהובים הם הגבהים ב־<span class="m">x = ±1</span> וב־<span class="m">x = ±1.5</span>.</p>
+    <p>לכל x, הגובה של הכחול הוא בדיוק n כפול הגובה של האפור. לכן:</p>
+    <ul>
+      <li><span class="m">n &gt; 1</span> — הגבהים גדלים: הפרבולה צרה יותר.</li>
+      <li><span class="m">0 &lt; n &lt; 1</span> — הגבהים קטנים: הפרבולה רחבה יותר.</li>
+      <li><span class="m">n = 0</span> — כל הגבהים מתאפסים: קו ישר <span class="m">y = 0</span>.</li>
+      <li><span class="m">n &lt; 0</span> — הגבהים מתהפכים: הפרבולה פתוחה כלפי מטה.</li>
+    </ul>
+    <div class="formula m">x = 1  ⟹  y = n</div>
+    <p style="color:var(--muted)">הנקודה הירוקה <span class="m">(1, n)</span> מראה את n ישר על הגרף. בסרטון רואים את המתיחה, הכיווץ וההיפוך צעד אחר צעד.</p>
+  </section>
+</div>
+
+<script>
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const XR = [-3, 3], YR = [-3, 5], BARS = [-1.5, -1, 1, 1.5];
+  const params = { n: 1 };
+  const COL = { curve:'#5b9cff', base:'#46505f', bar:'#ffd166', mark:'#5ed68c', axis:'#7a8696', grid:'#1c242e' };
+
+  function fmt(n) { const s = (Math.round(n * 10) / 10).toString(); return s === '-0' ? '0' : s.replace('-', '−'); }
+
+  function draw() {
+    const w = cv.clientWidth, h = cv.clientHeight, pad = 26;
+    ctx.clearRect(0, 0, w, h);
+    const U = Math.min((w - 2 * pad) / (XR[1] - XR[0]), (h - 2 * pad) / (YR[1] - YR[0]));
+    const ox = w / 2, oy = pad + YR[1] * U;
+    const P = (x, y) => [ox + x * U, oy - y * U];
+    // grid
+    ctx.strokeStyle = COL.grid; ctx.lineWidth = 1;
+    for (let x = XR[0]; x <= XR[1]; x++) { const [sx] = P(x, 0); ctx.beginPath(); ctx.moveTo(sx, P(0, YR[1])[1]); ctx.lineTo(sx, P(0, YR[0])[1]); ctx.stroke(); }
+    for (let y = YR[0]; y <= YR[1]; y++) { const [, sy] = P(0, y); ctx.beginPath(); ctx.moveTo(P(XR[0], 0)[0], sy); ctx.lineTo(P(XR[1], 0)[0], sy); ctx.stroke(); }
+    // axes + labels
+    ctx.strokeStyle = COL.axis; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.moveTo(...P(XR[0], 0)); ctx.lineTo(...P(XR[1], 0)); ctx.moveTo(...P(0, YR[0])); ctx.lineTo(...P(0, YR[1])); ctx.stroke();
+    ctx.fillStyle = COL.axis; ctx.font = '12px Rubik, sans-serif'; ctx.direction = 'ltr';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let x = XR[0]; x <= XR[1]; x++) if (x) { const [sx, sy] = P(x, 0); ctx.fillText(String(x), sx, sy + 4); }
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let y = YR[0]; y <= YR[1]; y++) if (y) { const [sx, sy] = P(0, y); ctx.fillText(String(y), sx - 5, sy); }
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(pad - 4, pad - 4, w - 2 * pad + 8, h - 2 * pad + 8); ctx.clip();
+    const curve = (n, color, width) => {
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath();
+      for (let i = 0; i <= 300; i++) { const x = XR[0] + (XR[1] - XR[0]) * i / 300; const [sx, sy] = P(x, n * x * x); i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); }
+      ctx.stroke();
+    };
+    curve(1, COL.base, 2.5);
+    const n = params.n;
+    ctx.strokeStyle = COL.bar; ctx.lineWidth = 3;
+    BARS.forEach(x => {
+      ctx.beginPath(); ctx.moveTo(...P(x, 0)); ctx.lineTo(...P(x, n * x * x)); ctx.stroke();
+      ctx.fillStyle = COL.bar; ctx.beginPath(); ctx.arc(...P(x, n * x * x), 4, 0, 7); ctx.fill();
+    });
+    curve(n, COL.curve, 3.5);
+    // mark (1, n)
+    const [mx, my] = P(1, n);
+    ctx.fillStyle = COL.mark; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(mx, my, 7, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.font = '700 14px Rubik, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(`(1, ${fmt(n)})`, mx + 12, my + (n >= 0 ? -10 : 10));
+    ctx.restore();
+
+    document.getElementById('n-val').textContent = fmt(n);
+    const ro = document.getElementById('readout');
+    const M = s => `<span class="m">${s}</span>`;
+    ro.innerHTML = n > 1 ? `${M('n &gt; 1')}: צרה יותר — כל גובה גדל`
+      : n > 0 && n < 1 ? `${M('0 &lt; n &lt; 1')}: רחבה יותר — כל גובה קטן`
+      : n === 0 ? `${M('n = 0')}: קו ישר — כל הגבהים מתאפסים`
+      : n < 0 ? `${M('n &lt; 0')}: פתוחה כלפי מטה — הגבהים מתהפכים`
+      : `${M('n = 1')}: הפרבולה הבסיסית ${M('y = x²')}`;
+  }
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1, r = cv.getBoundingClientRect();
+    cv.width = r.width * dpr; cv.height = r.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('load', () => {
+    const el = document.getElementById('n');
+    const set = v => { params.n = Math.round(v * 10) / 10; el.value = params.n; draw(); };
+    el.addEventListener('input', () => set(parseFloat(el.value)));
+    document.querySelectorAll('.presets button').forEach(b =>
+      b.addEventListener('click', () => {
+        const from = params.n, to = parseFloat(b.dataset.n), t0 = performance.now();
+        const step = now => {
+          const k = Math.min(1, (now - t0) / 500), e = k * k * (3 - 2 * k);
+          params.n = from + (to - from) * e; el.value = params.n; draw();
+          if (k < 1) requestAnimationFrame(step); else set(to);
+        };
+        requestAnimationFrame(step);
+      }));
+    set(1); resize();
+  });
+</script>
+</body>
+</html>

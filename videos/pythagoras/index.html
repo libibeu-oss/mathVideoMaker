@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>משפט פיתגורס</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap">
+<style>
+  :root { --bg:#0f1419; --panel:#11161d; --line:#222b36; --fg:#e8ecf0; --muted:#9aa4b2;
+          --tri:#5b9cff; --a:#5ed68c; --b:#ff925c; --c:#ffd166; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Rubik", system-ui, "Arial Hebrew", sans-serif; background:var(--bg);
+         color:var(--fg); line-height:1.7; }
+  .wrap { max-width:760px; margin:0 auto; padding:22px 16px 44px; }
+  header { text-align:center; margin-bottom:16px; }
+  header h1 { margin:0 0 .25rem; font-size:1.5rem; }
+  header p { color:var(--muted); margin:0; font-size:.95rem; }
+  .stage { max-width:440px; margin:0 auto; }
+  canvas { width:100%; aspect-ratio:1/1; background:var(--panel); border:1px solid var(--line);
+           border-radius:12px; display:block; }
+  .controls { margin-top:12px; }
+  .controls label { display:block; margin:10px 0 2px; color:var(--muted); font-size:.95rem; }
+  .val { color:var(--c); font-weight:700; direction:ltr; unicode-bidi:isolate; }
+  input[type=range] { width:100%; accent-color:var(--tri); direction:ltr; }
+  .readout { margin:14px auto 0; text-align:center; font-weight:700; font-size:1.15rem;
+             direction:ltr; unicode-bidi:isolate; }
+  .readout .ga { color:var(--a); } .readout .gb { color:var(--b); } .readout .gc { color:var(--c); }
+  .hint { text-align:center; color:var(--muted); font-size:.9rem; margin-top:4px; min-height:1.6em; }
+  .divider { border:none; border-top:1px solid var(--line); margin:26px auto 0; max-width:680px; }
+  .explain { max-width:680px; margin:0 auto; }
+  .explain h2 { font-size:1.1rem; color:var(--muted); font-weight:500; margin:22px 0 6px; }
+  .explain p, .explain li { margin:.5rem 0; }
+  .formula { background:#161c24; border:1px solid var(--line); border-radius:10px; padding:10px 16px; margin:12px 0; }
+  .m { direction:ltr; unicode-bidi:isolate; font-weight:500; white-space:nowrap; }
+  .formula { text-align:center; font-size:1.5rem; font-weight:700; }
+  b.a { color:var(--a); } b.b { color:var(--b); } b.c { color:var(--c); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>משפט פיתגורס: למה a² + b² = c²?</h1>
+    <p>הזיזו את המשולשים בתוך הריבוע וראו: השטח הפנוי לא משתנה.</p>
+  </header>
+
+  <section class="stage">
+    <canvas id="c"></canvas>
+    <div class="controls">
+      <label>סידור המשולשים: <span id="t-val" class="val"></span>
+        <input id="t" type="range" min="0" max="1" step="0.01" value="0"></label>
+      <label>ניצב a = <span id="a-val" class="val"></span>
+        <input id="a" type="range" min="1" max="6" step="0.1" value="3"></label>
+      <label>ניצב b = <span id="b-val" class="val"></span>
+        <input id="b" type="range" min="1" max="6" step="0.1" value="4"></label>
+    </div>
+    <div class="readout" id="readout"></div>
+    <div class="hint" id="hint"></div>
+  </section>
+
+  <hr class="divider">
+
+  <section class="explain">
+    <h2>מה רואים כאן?</h2>
+    <p>ריבוע גדול שצלעו <span class="m">a+b</span>. בתוכו 4 משולשים ישרי־זווית זהים, שהניצבים שלהם <span class="m">a</span> ו־<span class="m">b</span> והיתר <span class="m">c</span>.</p>
+    <p>בסידור הראשון (סליידר בהתחלה) נשארים פנויים שני ריבועים: <b class="a">a²</b> ו־<b class="b">b²</b>.
+       בסידור השני (סליידר בסוף) נשאר פנוי ריבוע אחד מוטה: <b class="c">c²</b>.</p>
+    <h2>למה זה מוכיח את המשפט?</h2>
+    <ol>
+      <li>הריבוע הגדול זהה בשני הסידורים — אותה צלע <span class="m">a+b</span>.</li>
+      <li>המשולשים זהים — רק הזזנו וסובבנו אותם, לא שינינו אותם.</li>
+      <li>לכן השטח הפנוי חייב להיות שווה בשני הסידורים:</li>
+    </ol>
+    <div class="formula m"><b class="a">a²</b> + <b class="b">b²</b> = <b class="c">c²</b></div>
+    <p style="color:var(--muted)">נסו: קבעו <span class="m">a=3</span> ו־<span class="m">b=4</span>. יוצא <span class="m">9+16=25</span>, כלומר <span class="m">c=5</span>. את ההוכחה המלאה, צעד אחר צעד, רואים בסרטון.</p>
+  </section>
+</div>
+
+<script>
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const params = { a: 3, b: 4, t: 0 };
+  const COL = { tri:'#5b9cff', a:'#5ed68c', b:'#ff925c', c:'#ffd166', line:'#e8ecf0' };
+
+  function trisFor(a, b) {
+    const L = a + b;
+    // (right-angle vertex, end of leg a, end of leg b), math coords, y up
+    const left = [[[L,0],[b,0],[L,b]], [[b,b],[L,b],[b,0]], [[0,b],[0,L],[b,b]], [[b,L],[b,b],[0,L]]];
+    const right = [[[L,0],[b,0],[L,b]], [[L,L],[L,b],[a,L]], [[0,0],[0,a],[b,0]], [[0,L],[a,L],[0,a]]];
+    return { L, left, right };
+  }
+
+  function rigid(src, dst, t) {
+    const ang = T => Math.atan2(T[1][1] - T[0][1], T[1][0] - T[0][0]);
+    let da = ang(dst) - ang(src);
+    da = ((da + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    const th = da * t, cs = Math.cos(th), sn = Math.sin(th);
+    const cen = T => [(T[0][0] + T[1][0] + T[2][0]) / 3, (T[0][1] + T[1][1] + T[2][1]) / 3];
+    const [sx, sy] = cen(src), [dx, dy] = cen(dst);
+    const bx = sx + (dx - sx) * t, by = sy + (dy - sy) * t;
+    return src.map(([x, y]) => {
+      const rx = x - sx, ry = y - sy;
+      return [bx + rx * cs - ry * sn, by + rx * sn + ry * cs];
+    });
+  }
+
+  function poly(pts, fill, alpha, stroke) {
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+    ctx.closePath();
+    if (fill) { ctx.globalAlpha = alpha; ctx.fillStyle = fill; ctx.fill(); ctx.globalAlpha = 1; }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke(); }
+  }
+
+  function label(txt, x, y, color, size) {
+    ctx.fillStyle = color; ctx.font = `700 ${size}px Rubik, sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
+    ctx.fillText(txt, x, y);
+  }
+
+  function ease(t) { return t * t * (3 - 2 * t); }
+
+  function draw() {
+    const w = cv.clientWidth, h = cv.clientHeight;
+    ctx.clearRect(0, 0, w, h);
+    const { a, b } = params, t = ease(params.t);
+    const { L, left, right } = trisFor(a, b);
+    const pad = 34, S = Math.min(w, h) - 2 * pad, U = S / L;
+    const X = x => pad + x * U, Y = y => pad + S - y * U;
+    const px = pts => pts.map(([x, y]) => [X(x), Y(y)]);
+
+    // leftover areas fade in only at the two ends of the slider
+    const kLeft = Math.max(0, 1 - params.t / 0.15), kRight = Math.max(0, (params.t - 0.85) / 0.15);
+    if (kLeft > 0) {
+      poly(px([[0,0],[b,0],[b,b],[0,b]]), COL.b, 0.55 * kLeft);
+      poly(px([[b,b],[L,b],[L,L],[b,L]]), COL.a, 0.55 * kLeft);
+      ctx.globalAlpha = kLeft;
+      label('b²', X(b / 2), Y(b / 2), '#fff', Math.max(14, U * Math.min(b, 2.2) * 0.4));
+      label('a²', X(b + a / 2), Y(b + a / 2), '#fff', Math.max(14, U * Math.min(a, 2.2) * 0.4));
+      ctx.globalAlpha = 1;
+    }
+    if (kRight > 0) {
+      poly(px([[b,0],[L,b],[a,L],[0,a]]), COL.c, 0.5 * kRight);
+      ctx.globalAlpha = kRight;
+      label('c²', X(L / 2), Y(L / 2), '#fff', Math.max(16, S * 0.09));
+      ctx.globalAlpha = 1;
+    }
+    for (let i = 0; i < 4; i++) poly(px(rigid(left[i], right[i], t)), COL.tri, 0.6, COL.line);
+    // outer square
+    ctx.strokeStyle = COL.line; ctx.lineWidth = 3; ctx.strokeRect(X(0), Y(L), S, S);
+    // side labels
+    label('b', X(b / 2), Y(0) + 18, COL.b, 16);
+    label('a', X(b + a / 2), Y(0) + 18, COL.a, 16);
+
+    const A2 = a * a, B2 = b * b, C2 = A2 + B2;
+    const fmt = v => String(Math.round(v * 100) / 100);
+    document.getElementById('readout').innerHTML =
+      `<span class="ga">${fmt(A2)}</span> + <span class="gb">${fmt(B2)}</span> = ` +
+      `<span class="gc">${fmt(C2)}</span>  ⟹  c ≈ ${Math.sqrt(C2).toFixed(2)}`;
+    document.getElementById('hint').textContent =
+      params.t < 0.15 ? 'השטח הפנוי: a² + b²' : params.t > 0.85 ? 'השטח הפנוי: c²' : 'אותם 4 משולשים זזים…';
+    document.getElementById('t-val').textContent = Math.round(params.t * 100) + '%';
+  }
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1, r = cv.getBoundingClientRect();
+    cv.width = r.width * dpr; cv.height = r.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+
+  function bindSlider(id) {
+    const el = document.getElementById(id), out = document.getElementById(id + '-val');
+    const update = () => { params[id] = parseFloat(el.value); if (id !== 't') out.textContent = el.value; draw(); };
+    el.addEventListener('input', update); update();
+  }
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('load', () => {
+    ['t', 'a', 'b'].forEach(bindSlider);
+    resize();
+  });
+</script>
+</body>
+</html>

@@ -192,7 +192,7 @@ window.addEventListener('load', () => {
 
 **写完先跑 `check_web.py`——它把“看不出来”的静默故障变成文字报告，不用看图：**
 ```bash
-python3 .cursor/skills/math-explainer/scripts/check_web.py <主题>/index.html
+python3 .claude/skills/math-explainer/scripts/check_web.py <主题>/index.html
 ```
 必须 `[PASS]`（无 FAIL）。它会检查：$ 公式配对、KaTeX 是否齐全并被调用、`getElementById` 引用的 id 是否都存在、滑块是否绑了 input 事件、canvas/draw 链路、布局是否单列居中且“先交互后讲解”、以及（若装了 node）内联 JS 语法。`[FAIL]` 按提示逐条修到 0。`[warn]` 是建议，酌情优化。
 

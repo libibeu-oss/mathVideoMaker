@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="he"><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000;font-family:Rubik,Heebo,sans-serif}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden}
+.layer{position:absolute;inset:0;display:none;overflow:hidden}
+.pink{color:#ff3fd0}
+#A{background:#121016;color:#fff}
+.w{position:absolute;left:0;right:0;text-align:center;direction:rtl;font-weight:900;line-height:1;letter-spacing:-2px;white-space:nowrap}
+.ev{position:absolute;left:110px;right:110px;height:230px;border-radius:30px;background:#1f1b27;display:flex;align-items:center;gap:26px;padding:20px;direction:rtl;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.ev .im{flex:none;width:190px;height:190px;border-radius:20px;background-size:cover;background-position:center;filter:grayscale(.6)}
+.ev b{display:block;color:#fff;font-size:46px;font-weight:800}
+.ev small{display:block;color:#9a93a8;font-size:30px;margin-top:6px}
+.ev .st{position:absolute;left:40px;top:50%;margin-top:-62px;border:10px solid #ff3b5c;color:#ff3b5c;font-weight:900;font-size:84px;padding:4px 24px;border-radius:18px;background:rgba(18,16,22,.85);direction:ltr}
+.chipt{position:absolute;left:50%;top:1250px;transform:translateX(-50%);padding:14px 36px;border-radius:40px;background:#2a2533;color:#c9c0d6;font-size:46px;font-weight:700;direction:ltr}
+.sofa{position:absolute;left:190px;top:1180px;width:700px;height:380px}
+.sofa div{position:absolute;background:#5d556e;border-radius:36px}
+#T{background:#ff3fd0;color:#121016}
+.qb{position:absolute;left:70px;right:70px;padding:34px 40px;border-radius:44px 44px 12px 44px;background:#121016;color:#fff;font-weight:900;font-size:92px;line-height:1.1;text-align:center;direction:rtl;box-shadow:0 20px 0 rgba(0,0,0,.18)}
+#Q{background:#000;color:#fff}
+#B{background:radial-gradient(120% 80% at 50% 40%,#2a1158 0%,#160830 55%,#0b0418 100%);color:#fff}
+#B .ph{position:absolute;inset:-60px;background-size:cover;background-position:center;filter:blur(38px) saturate(1.3);opacity:.32}
+.dot{position:absolute;border-radius:50%;filter:blur(2px)}
+.phone{position:absolute;left:225px;top:420px;width:630px;height:1330px;border-radius:92px;background:#06020e;padding:15px;box-shadow:0 0 0 3px #3a2a5a,0 40px 120px rgba(0,0,0,.6),0 0 160px rgba(162,75,255,.35);opacity:0}
+.phone .scr{position:relative;width:600px;height:1300px;border-radius:78px;overflow:hidden;background:#0b0418}
+.phone img{position:absolute;left:0;top:0;width:600px;height:1300px;object-fit:cover;object-position:top}
+.tap{position:absolute;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;background:rgba(255,255,255,.35);border:5px solid rgba(255,255,255,.9);opacity:0;z-index:5}
+.bcap{position:absolute;left:40px;right:40px;top:120px;text-align:center;direction:rtl;font-weight:900;font-size:104px;line-height:1.04;text-shadow:0 8px 40px rgba(80,0,120,.6)}
+.chip{position:absolute;padding:20px 38px;border-radius:50px;font-weight:800;font-size:44px;direction:rtl;color:#fff;box-shadow:0 14px 40px rgba(0,0,0,.4)}
+.wm{position:absolute;left:44px;top:44px;width:150px;opacity:0}
+#icon{position:absolute;left:350px;top:560px;width:380px;height:380px;border-radius:88px;overflow:hidden;box-shadow:0 0 160px rgba(255,63,208,.75);z-index:30}
+.ring{position:absolute;left:540px;top:750px;border-radius:50%;border:10px solid #ff3fd0;z-index:29}
+#E{background:radial-gradient(110% 70% at 50% 42%,#3a1470 0%,#170733 55%,#0b0418 100%);color:#fff}
+.spark{position:absolute;left:540px;top:760px;width:12px;height:12px;border-radius:50%}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:90;pointer-events:none}
+</style></head>
+<body><div id="stage"><div id="flash"></div></div>
+<script>
+"use strict";
+const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),P=(t,a,b)=>cl((t-a)/(b-a)),eo=x=>1-Math.pow(1-x,3),eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,lerp=(a,b,x)=>a+(b-a)*x;
+const back=x=>{const c1=1.9,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+const $=h=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild};
+function rng(s){return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+const stage=document.getElementById('stage'),flash=document.getElementById('flash');
+const add=(h,parent=stage)=>{const e=$(h);parent===stage?stage.insertBefore(e,flash):parent.appendChild(e);return e};
+const BEAT=0.4651,DROP=15.0,END=25.85;
+const SFX=[];const sfx=(t,name,g=1)=>SFX.push({t:+t.toFixed(3),name,g});
+const show=(l,a,b,t)=>{const on=t>=a&&t<b;l.style.display=on?'block':'none';return on};
+
+/* kinetic words: [t0, t1, html, size, top, mode, layer] ; mode slam = big-to-normal hit, pop = springy grow */
+const A=add(`<div class="layer" id="A"></div>`);
+const T=add(`<div class="layer" id="T"></div>`);
+const Q=add(`<div class="layer" id="Q"></div>`);
+const WORDS=[
+ [0.30,2.75,'חמישי',210,700,'pop',A],[0.95,2.75,'בלילה.',210,930,'pop',A],
+ [4.33,5.55,'כל המסיבות',150,1330,'slam',A],[4.80,5.55,'<span class="pink">תפוסות.</span>',190,1500,'slam',A],
+ [5.80,8.30,'אין',260,560,'slam',A],[6.27,8.30,'לאן',260,820,'slam',A],[6.73,8.30,'לצאת.',260,1080,'slam',A],
+ [8.45,10.15,'מה',230,620,'pop',A],[8.90,10.15,'עושים<span class="pink">?</span>',230,860,'pop',A],
+ [10.22,10.95,'מה?!',330,780,'slam',T],
+ [13.93,14.95,'אבל...',260,830,'pop',Q],
+];
+const words=WORDS.map(w=>{const e=add(`<div class="w" style="font-size:${w[3]}px;top:${w[4]}px">${w[2]}</div>`,w[6]);sfx(w[0],w[5]==='slam'?'slam':'pop',w[5]==='slam'?.8:.5);return {e,t0:w[0],t1:w[1],mode:w[5]}});
+const clock=add(`<div class="chipt">22:00</div>`,A);
+const EVS=[['מסיבת גג','חמישי · 23:00','12_40227286'],['רייב במחסן','חמישי · 23:30','19_bded670b'],['האוס בנמל','חמישי · 22:30','22_602c8e3e']];
+const evs=EVS.map((v,i)=>{const e=add(`<div class="ev" style="top:${360+i*290}px"><div class="im" style="background-image:url(photos/${v[2]}.webp)"></div><div><b>${v[0]}</b><small>${v[1]}</small></div><div class="st">SOLD OUT</div></div>`,A);
+  const t0=2.85+i*BEAT/2,ts=3.55+i*BEAT/2;sfx(t0,'pop',.45);sfx(ts,'stamp',.8);return {e,st:e.querySelector('.st'),t0,ts}});
+const sofa=add(`<div class="sofa"><div style="left:55px;top:30px;width:590px;height:210px;border-radius:56px"></div><div style="left:0;top:140px;width:140px;height:230px"></div><div style="left:560px;top:140px;width:140px;height:230px"></div><div style="left:95px;top:215px;width:510px;height:140px;background:#776e8a"></div></div>`,A);
+const QS=[[11.0,'אין לאן לצאת?',420],[11.93,'כל המסיבות<br>תפוסות?',760],[12.86,'מחפשים מסיבה<br>ולא מוצאים?',1200]];
+const qbs=QS.map(q=>{const e=add(`<div class="qb" style="top:${q[2]}px">${q[1]}</div>`,T);sfx(q[0],'msg',.7);return {e,t0:q[0]}});
+sfx(13.05,'riser',.8);sfx(DROP,'drop',1);
+
+/* B: solution */
+const B=add(`<div class="layer" id="B"><div class="ph" style="background-image:url(photos/19_bded670b.webp)"></div></div>`);
+const bph=B.querySelector('.ph');
+const DR=rng(4242);DR();DR();
+const dots=[...Array(16)].map((_,i)=>{const r=DR;const s=20+r()*70;const e=add(`<div class="dot" style="width:${s}px;height:${s}px;background:${['#ff3fd0','#33d6ff','#a24bff','#ffb340'][i%4]};opacity:${.25+r()*.35}"></div>`,B);return {e,x:r()*1080,y:r()*1920,v:20+r()*50,ph:r()*6}});
+const wm=add(`<img class="wm" src="logo_wordmark.png">`,B);
+const phone=add(`<div class="phone"><div class="scr"><img class="sc"><div class="tap"></div></div></div>`,B);
+const scr=phone.querySelector('.sc'),tap=phone.querySelector('.tap');
+const bcap=add(`<div class="bcap"></div>`,B);
+const appl=add(`<div class="w" style="top:1080px;font-size:118px;line-height:1.08;text-shadow:0 8px 40px rgba(80,0,120,.6)">האפליקציה<br>של <span class="pink">המסיבות.</span></div>`,B);
+const CHIPS=[['האוס','linear-gradient(90deg,#ff4fd8,#b44bff)',40,640],['טכנו','#1d1430',800,800],["ג'אז",'#ffb340',30,1180],['פופ','#33d6ff',830,1380]];
+const chips=CHIPS.map(c=>add(`<div class="chip" style="background:${c[1]};left:${c[2]}px;top:${c[3]}px">${c[0]}</div>`,B));
+const icon=add(`<div id="icon"><img src="logo_app_icon.png" style="width:380px;height:380px"></div>`,B);
+const rings=[0,1,2].map(()=>add(`<div class="ring"></div>`,B));
+const SEG=[[17.5,20.1,'s2',.35,2.95],[20.1,22.0,'s5',0,1.8],[22.0,24.05,'s3',.55,3.6],[24.05,END,'s4',0,1.8]];
+SEG.forEach(s=>sfx(s[0],'swoosh',.55));
+const RECTS={s3_house:[77.6,153.1,143.2,157.5],s4_follow:[167.2,540.6,117.6,52]};
+const capCaps=[[17.5,20.1,'כל המסיבות<br>במקום <span class="pink">אחד.</span>'],[20.1,22.0,'מה קורה<br><span class="pink">סביבכם</span> הערב'],[22.0,24.05,'בוחרים<br><span class="pink">וייב.</span>'],[24.05,END,'עוקבים אחרי<br><span class="pink">האמנים.</span>']];
+const TAPS={s3:22.0+(1.0-.55)/((3.6-.55)/2.05),s4:24.75};sfx(TAPS.s3,'tap',.5);sfx(TAPS.s4,'tap',.5);
+
+/* E: end */
+const E=add(`<div class="layer" id="E"></div>`);
+const SR=rng(977);SR();SR();const sparks=[...Array(46)].map((_,i)=>{const r=SR;const a=r()*Math.PI*2,sp=380+r()*620;const e=add(`<div class="spark" style="background:${['#ff3fd0','#33d6ff','#ffb340','#fff','#a24bff'][i%5]}"></div>`,E);return {e,a,sp,d:.9+r()*.8}});
+const elogo=add(`<div style="position:absolute;left:280px;top:420px;width:520px"><img src="logo_card.png" style="width:520px;border-radius:84px;box-shadow:0 0 140px rgba(255,63,208,.5)"></div>`,E);
+const el1=add(`<div style="position:absolute;left:0;right:0;top:1030px;text-align:center;direction:rtl;font-weight:900;font-size:104px;line-height:1.05">לאן הולכים?<br><span style="color:#ff3fd0;text-shadow:0 0 30px rgba(255,63,208,.55)">אני בפנים.</span></div>`,E);
+const el2=add(`<div style="position:absolute;left:0;right:0;top:1340px;text-align:center"><span style="display:inline-block;padding:20px 44px;border-radius:60px;background:#fff;color:#16121c;font-weight:800;font-size:44px;direction:rtl">בקרוב ב־App Store וב־Google Play</span></div>`,E);
+const el3=add(`<div style="position:absolute;left:0;right:0;top:1480px;text-align:center;font-weight:700;font-size:56px;letter-spacing:2px;direction:ltr">wawg.live</div>`,E);
+sfx(END+.05,'boom',.8);sfx(END+.3,'chime',.6);
+
+const pending=[];
+window.R=async function(t){
+  // shake on the "אין לאן לצאת" slams
+  let sh=0;for(const s of [5.8,6.27,6.73,10.22])if(t>=s&&t<s+.25)sh=Math.sin((t-s)*90)*18*(1-(t-s)/.25);
+  /* ---- A: Thursday, sold out, nowhere to go (0-10.2) ---- */
+  if(show(A,0,10.2,t)){
+    A.style.transform=`translate(${sh}px,${-sh*.5}px)`;
+    const ck=P(t,1.55,1.8);clock.style.opacity=t<2.75?ck:0;clock.style.transform=`translateX(-50%) scale(${ck>0?back(ck):0})`;
+    evs.forEach(o=>{const k=P(t,o.t0,o.t0+.22),x=P(t,5.35,5.55);o.e.style.opacity=t<o.t0||t>=5.55?0:1-x;o.e.style.transform=`translateX(${(1-eo(k))*-200}px) scale(${lerp(.9,1,eo(k))})`;
+      const s=P(t,o.ts,o.ts+.18);o.st.style.opacity=s>0?1:0;o.st.style.transform=`rotate(-12deg) scale(${s>0?lerp(2.4,1,eo(s)):0})`});
+    const so=P(t,9.15,9.5);sofa.style.opacity=t<10.15&&so>0?1:0;sofa.style.transform=`translateY(${(1-back(so))*300}px)`;
+  }
+  /* ---- T: the twist on pink (10.2-13.85) ---- */
+  if(show(T,10.2,13.85,t)){T.style.transform=`translate(${sh}px,0)`;
+    qbs.forEach((o,i)=>{const k=P(t,o.t0,o.t0+.25);o.e.style.opacity=k>0?1:0;o.e.style.transform=`rotate(${[-2,2,-1.5][i]}deg) scale(${k>0?back(k):0})`});}
+  /* ---- Q: "אבל..." (13.85-15) ---- */
+  if(show(Q,13.85,DROP,t)){const imp=eio(P(t,14.6,15));Q.firstChild.style.filter='';}
+  // words
+  words.forEach(o=>{const lt=t-o.t0;if(lt<0||t>=o.t1){o.e.style.opacity=0;return}
+    const k=P(lt,0,o.mode==='slam'?.16:.24);let s=o.mode==='slam'?lerp(1.7,1,eo(k)):back(k);
+    if(o.t1===14.95){const imp=eio(P(t,14.55,14.95));s*=1-imp*.97}
+    o.e.style.opacity=o.mode==='slam'?Math.min(1,k*3):(k>0?1:0);o.e.style.transform=`scale(${s})`});
+  /* ---- B: solution (15-25.85) ---- */
+  if(show(B,DROP,END,t)){const bt=t-DROP;
+    bph.style.transform=`scale(${1.1+bt*.01})`;
+    dots.forEach(d=>{d.e.style.left=(d.x+Math.sin(bt*.7+d.ph)*30)+'px';d.e.style.top=((d.y-bt*d.v)%1920+1920)%1920+'px'});
+    const ik=P(t,DROP,DROP+.3),io=P(t,16.95,17.2);icon.style.display=io<1?'block':'none';
+    icon.style.transform=`scale(${ik>0?back(ik)*(1+io*1.4):0}) translateY(${Math.sin(bt*3)*6}px)`;icon.style.opacity=1-io;
+    rings.forEach((r,i)=>{const k=P(t,DROP+i*.12,DROP+i*.12+.7);const s=40+k*1100;r.style.width=r.style.height=s+'px';r.style.margin=`${-s/2}px 0 0 ${-s/2}px`;r.style.opacity=k>0&&k<1?(1-k):0});
+    const ak=eo(P(t,15.45,15.8)),ao=P(t,17.0,17.3);appl.style.opacity=ak*(1-ao);appl.style.transform=`translateY(${(1-ak)*50}px)`;
+    const pr=eo(P(t,17.22,17.65));phone.style.opacity=pr;phone.style.transform=`translateY(${(1-pr)*500}px) scale(${lerp(.8,1,pr)})`;
+    wm.style.opacity=.9*pr;
+    if(t>=17.2){const seg=SEG.find(s=>t>=s[0]&&t<s[1])||SEG[0];const f=lerp(seg[3],seg[4],P(t,seg[0],seg[1]));
+      const idx=Math.min({s2:119,s3:119,s4:119,s5:149}[seg[2]],Math.max(0,Math.round(f*30)));
+      const src=`cap/${seg[2]}/${String(idx).padStart(4,'0')}.jpg`;if(!scr.src.endsWith(src)){scr.src=src;pending.push(scr.decode().catch(()=>{}))}
+      const sk=eo(P(t,seg[0],seg[0]+.3));phone.querySelector('.scr').style.transform=`scale(${t<18?1:lerp(1.04,1,sk)})`;
+      let tp=null,tt=0;const S=600/390;
+      if(seg[2]==='s3'){tt=TAPS.s3;tp=RECTS.s3_house}
+      if(seg[2]==='s4'){tt=TAPS.s4;tp=RECTS.s4_follow}
+      if(tp){const k=P(t,tt-.15,tt+.35);tap.style.left=(tp[0]+tp[2]/2)*S+'px';tap.style.top=(tp[1]+tp[3]/2)*S+'px';tap.style.opacity=k>0&&k<1?Math.sin(k*Math.PI):0;tap.style.transform=`scale(${.6+k*.7})`}else tap.style.opacity=0;
+      const cc=capCaps.find(c=>t>=c[0]&&t<c[1]);if(cc){if(bcap.dataset.k!==cc[2]){bcap.innerHTML=cc[2];bcap.dataset.k=cc[2]}
+        const k=eo(P(t,Math.max(cc[0],17.6),Math.max(cc[0],17.6)+.3)),o=1-P(t,cc[1]-.15,cc[1]);bcap.style.opacity=k*o;bcap.style.transform=`translateY(${(1-k)*40}px)`}}
+    else bcap.style.opacity=0;
+    chips.forEach((c,i)=>{const k=P(t,22.1+i*BEAT/2,22.35+i*BEAT/2),o=P(t,23.85,24.05);c.style.opacity=k>0?(1-o):0;c.style.transform=`scale(${k>0?back(k):0}) translateY(${Math.sin((t+i)*2)*10}px) rotate(${(i%2?3:-3)}deg)`});
+    B.style.opacity=1-P(t,END-.15,END);
+  }
+  /* ---- E ---- */
+  if(show(E,END,99,t)){const et=t-END;
+    sparks.forEach(s=>{const k=P(et,0,s.d);const r=eo(k)*s.sp;s.e.style.transform=`translate(${Math.cos(s.a)*r}px,${Math.sin(s.a)*r+k*k*220}px) scale(${1-k*.6})`;s.e.style.opacity=k>0&&k<1?1-k:0});
+    const lk=P(t,END+.05,END+.4);elogo.style.opacity=lk>0?1:0;elogo.style.transform=`scale(${lk>0?back(lk):0}) translateY(${Math.sin(et*2)*6}px)`;
+    const a=eo(P(t,END+.7,END+1.05));el1.style.opacity=a;el1.style.transform=`translateY(${(1-a)*40}px)`;
+    const b=eo(P(t,END+1.95,END+2.3));el2.style.opacity=b;el2.style.transform=`translateY(${(1-b)*30}px)`;
+    el3.style.opacity=eo(P(t,END+2.55,END+2.9));
+  }
+  let fl=0;for(const s of [DROP,END])if(t>=s&&t<s+.14)fl=.75*(1-(t-s)/.14);flash.style.opacity=fl;
+  await Promise.all(pending.splice(0));
+  await Promise.all([...stage.querySelectorAll('img')].filter(i=>i.offsetParent&&!i.complete).map(i=>i.decode().catch(()=>{})));
+};
+window.SFX=SFX;
+const pre=['logo_card.png','logo_app_icon.png','logo_wordmark.png','photos/19_bded670b.webp','photos/12_40227286.webp','photos/22_602c8e3e.webp'].map(s=>{const i=new Image();i.src=s;return i.decode().catch(()=>{})});
+window.READY=Promise.all([document.fonts.ready,...pre]).then(()=>R(0)).then(()=>true);
+</script></body></html>
